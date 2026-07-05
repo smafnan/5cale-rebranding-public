@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import LogoMark from "@/components/LogoMark";
 
 /* Everything the studio makes, floating behind the title: running code,
    a social post going live, an infographic, marker doodles, pixel art,
-   all drifting through a slow-moving pixel galaxy. */
+   all drifting through a slow-moving pixel galaxy. Every asset is a
+   door: cards and doodles link into the site, the galaxy itself fires
+   shooting stars where you click.
+
+   Lives inside the hero as a negative-z child: gap clicks in the section
+   hit-test through to these links. The 3D five's hero waypoint (upper
+   right) is kept clear of cards so the chrome mark flies unobstructed. */
 
 const CODE_LINES: [string, string][] = [
   ["$ npm create 5cale@latest", "text-white/45"],
@@ -53,10 +60,13 @@ function Galaxy() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     type Star = { x: number; y: number; s: number; a: number; tw: number; ph: number; vx: number; c: string };
-    type Streak = { x: number; y: number; vx: number; vy: number; born: number } | null;
+    type Streak = { x: number; y: number; vx: number; vy: number; born: number };
+    type Spark = { x: number; y: number; vx: number; vy: number; born: number; c: string };
 
     let stars: Star[] = [];
-    let streak: Streak = null;
+    let streak: Streak | null = null;
+    let bursts: Streak[] = [];
+    let sparks: Spark[] = [];
     let nextStreak = 2.5;
     let raf = 0;
     let running = false;
@@ -92,6 +102,21 @@ function Galaxy() {
       }));
     };
 
+    const drawStreak = (s: Streak, t: number, life: number) => {
+      const age = t - s.born;
+      if (age > life) return false;
+      const sx = s.x + s.vx * age;
+      const sy = s.y + s.vy * age;
+      const fade = 1 - age / life;
+      ctx.strokeStyle = `rgba(255,255,255,${0.7 * fade})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sx - s.vx * 0.06, sy - s.vy * 0.06);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      return true;
+    };
+
     const frame = (t: number) => {
       ctx.clearRect(0, 0, w, h);
 
@@ -118,7 +143,7 @@ function Galaxy() {
       }
       ctx.globalAlpha = 1;
 
-      // The occasional shooting star.
+      // The occasional ambient shooting star.
       if (!streak && t > nextStreak) {
         streak = {
           x: Math.random() * w * 0.7,
@@ -128,29 +153,55 @@ function Galaxy() {
           born: t,
         };
       }
-      if (streak) {
-        const age = t - streak.born;
-        if (age > 0.8) {
-          streak = null;
-          nextStreak = t + 3.5 + Math.random() * 5;
-        } else {
-          const sx = streak.x + streak.vx * age;
-          const sy = streak.y + streak.vy * age;
-          const fade = 1 - age / 0.8;
-          ctx.strokeStyle = `rgba(255,255,255,${0.7 * fade})`;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(sx - streak.vx * 0.06, sy - streak.vy * 0.06);
-          ctx.lineTo(sx, sy);
-          ctx.stroke();
-        }
+      if (streak && !drawStreak(streak, t, 0.8)) {
+        streak = null;
+        nextStreak = t + 3.5 + Math.random() * 5;
       }
+
+      // Click-made shooting stars and sparks.
+      bursts = bursts.filter((b) => drawStreak(b, t, 0.9));
+      sparks = sparks.filter((sp) => {
+        const age = t - sp.born;
+        if (age > 0.7) return false;
+        ctx.globalAlpha = 1 - age / 0.7;
+        ctx.fillStyle = sp.c;
+        ctx.fillRect(sp.x + sp.vx * age, sp.y + sp.vy * age, 2.5, 2.5);
+        return true;
+      });
+      ctx.globalAlpha = 1;
     };
 
     const loop = () => {
       frame(performance.now() / 1000);
       raf = requestAnimationFrame(loop);
     };
+
+    // Tap the sky, get a meteor shower.
+    const onDown = (e: PointerEvent) => {
+      if (reduced) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const t = performance.now() / 1000;
+      for (let i = 0; i < 3; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 260 + Math.random() * 260;
+        bursts.push({ x: cx, y: cy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, born: t });
+      }
+      for (let i = 0; i < 10; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 40 + Math.random() * 140;
+        sparks.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          born: t,
+          c: COLORS[Math.floor(Math.random() * COLORS.length)],
+        });
+      }
+    };
+    canvas.addEventListener("pointerdown", onDown);
 
     resize();
     if (reduced) {
@@ -178,33 +229,47 @@ function Galaxy() {
     return () => {
       io.disconnect();
       cancelAnimationFrame(raf);
+      canvas.removeEventListener("pointerdown", onDown);
       window.removeEventListener("resize", onResize);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden />;
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className="pointer-events-auto absolute inset-0 h-full w-full"
+    />
+  );
 }
 
 export default function HeroBackdrop() {
   return (
-    <div data-hero-backdrop aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+    <div
+      data-hero-backdrop
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+    >
       <Galaxy />
 
       {/* Terminal: code shipping in real time */}
-      <div className="absolute left-[3%] top-[15.5%] w-40 -rotate-6 opacity-70 md:left-[4%] md:top-[13%] md:w-60">
+      <Link
+        href="/services"
+        aria-label="Websites, apps and AI: explore the services"
+        className="group pointer-events-auto absolute left-[3%] top-[15.5%] block w-44 -rotate-6 opacity-70 transition duration-300 hover:scale-[1.04] hover:opacity-100 md:left-[4%] md:top-[13%] md:w-72"
+      >
         <div className="hb-float rounded-lg border border-white/12 bg-[#101014]/80" style={{ "--dur": "7s" } as React.CSSProperties}>
           <div className="flex items-center gap-1.5 border-b border-white/10 px-3 py-2">
             <span className="h-2 w-2 rounded-full bg-[#ff4d1c]/80" />
             <span className="h-2 w-2 rounded-full bg-[#d9ff3d]/80" />
             <span className="h-2 w-2 rounded-full bg-[#5bf1a6]/80" />
-            <span className="label ml-2 text-[8px] text-white/40">5cale.ts</span>
+            <span className="label ml-2 text-[9px] text-white/40">5cale.ts</span>
           </div>
-          <div className="h-20 overflow-hidden px-3 py-2 md:h-40">
+          <div className="h-24 overflow-hidden px-3 py-2 md:h-48">
             <div className="hb-scroll" style={{ "--dur": "14s" } as React.CSSProperties}>
               {[0, 1].map((copy) => (
                 <div key={copy}>
                   {CODE_LINES.map(([line, cls], i) => (
-                    <p key={i} className={`whitespace-pre font-mono text-[8px] leading-relaxed md:text-[10px] ${cls}`}>
+                    <p key={i} className={`whitespace-pre font-mono text-[9px] leading-relaxed md:text-[11px] ${cls}`}>
                       {line}
                     </p>
                   ))}
@@ -213,37 +278,45 @@ export default function HeroBackdrop() {
             </div>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Social post: the new brand going live */}
-      <div className="absolute right-[4%] top-[12%] hidden w-48 rotate-[5deg] opacity-70 md:block">
+      <Link
+        href="/work"
+        aria-label="The rebrand going live: see the work"
+        className="group pointer-events-auto absolute left-1/2 top-[6.5%] hidden w-60 -translate-x-1/2 rotate-[5deg] opacity-70 transition duration-300 hover:scale-[1.04] hover:opacity-100 md:block"
+      >
         <div className="hb-float overflow-hidden rounded-xl border border-white/12 bg-[#101014]/85" style={{ "--dur": "8.5s", "--delay": "-2s" } as React.CSSProperties}>
-          <div className="flex items-center gap-2 px-3 py-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d9ff3d]">
-              <LogoMark className="h-3.5 w-auto text-[#0b0b0b]" />
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#d9ff3d]">
+              <LogoMark className="h-4 w-auto text-[#0b0b0b]" />
             </span>
             <div>
-              <p className="text-[10px] font-medium text-white/85">@5cale</p>
-              <p className="text-[8px] text-white/40">just now</p>
+              <p className="text-[11px] font-medium text-white/85">@5cale</p>
+              <p className="text-[9px] text-white/40">just now</p>
             </div>
           </div>
-          <div className="relative mx-2 flex h-28 items-center justify-center rounded-md" style={{ background: "linear-gradient(135deg, #ff4d1c, #a98bff)" }}>
-            <LogoMark className="h-12 w-auto text-white/90" />
-            <span className="label absolute bottom-1.5 right-2 text-[7px] text-white/70">rebrand.png</span>
+          <div className="relative mx-2.5 flex h-36 items-center justify-center rounded-md" style={{ background: "linear-gradient(135deg, #ff4d1c, #a98bff)" }}>
+            <LogoMark className="h-14 w-auto text-white/90" />
+            <span className="label absolute bottom-2 right-2.5 text-[8px] text-white/70">rebrand.png</span>
           </div>
-          <div className="flex items-center gap-3 px-3 py-2 text-[9px] text-white/60">
+          <div className="flex items-center gap-3 px-3 py-2.5 text-[10px] text-white/60">
             <span>♥ 5.2k</span>
             <span>↺ 512</span>
             <span className="ml-auto text-[#d9ff3d]/90">new drop ✦</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Infographic: growth, charted */}
-      <div className="absolute bottom-[15%] left-[6%] hidden w-44 rotate-[2.5deg] opacity-70 lg:block">
-        <div className="hb-float rounded-lg border border-white/12 bg-[#101014]/80 p-3" style={{ "--dur": "9s", "--delay": "-4s" } as React.CSSProperties}>
-          <p className="label text-[8px] text-white/45">Reach, five acts in</p>
-          <div className="mt-2 flex h-16 items-end gap-1.5">
+      <Link
+        href="/about"
+        aria-label="The numbers behind the studio: about 5cale"
+        className="group pointer-events-auto absolute bottom-[4%] left-[6%] hidden w-56 rotate-[2.5deg] opacity-70 transition duration-300 hover:scale-[1.04] hover:opacity-100 lg:block"
+      >
+        <div className="hb-float rounded-lg border border-white/12 bg-[#101014]/80 p-4" style={{ "--dur": "9s", "--delay": "-4s" } as React.CSSProperties}>
+          <p className="label text-[9px] text-white/45">Reach, five acts in</p>
+          <div className="mt-2.5 flex h-20 items-end gap-2">
             {[22, 38, 54, 72, 100].map((v, i) => (
               <span
                 key={i}
@@ -252,20 +325,24 @@ export default function HeroBackdrop() {
               />
             ))}
           </div>
-          <div className="mt-2 flex items-center justify-between">
-            <span className="font-pixel text-sm text-[#d9ff3d]">+512%</span>
-            <svg viewBox="0 0 36 36" className="h-8 w-8 -rotate-90">
+          <div className="mt-2.5 flex items-center justify-between">
+            <span className="font-pixel text-lg text-[#d9ff3d]">+512%</span>
+            <svg viewBox="0 0 36 36" className="h-10 w-10 -rotate-90">
               <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="3.5" />
               <circle cx="18" cy="18" r="14" fill="none" stroke="#5bf1a6" strokeWidth="3.5" strokeLinecap="round" pathLength={240} className="hb-draw" />
             </svg>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Pixel rocket, flame flickering frame by frame */}
-      <div className="absolute bottom-[16%] right-[7%] rotate-[10deg] opacity-80 md:bottom-[22%] md:right-[11%]">
+      <Link
+        href="/contact"
+        aria-label="Ready for launch: start a project"
+        className="group pointer-events-auto absolute bottom-[16%] right-[7%] block rotate-[10deg] opacity-80 transition duration-300 hover:scale-110 hover:opacity-100 md:bottom-[31%] md:right-[13%]"
+      >
         <div className="hb-float" style={{ "--dur": "6s", "--delay": "-1.2s" } as React.CSSProperties}>
-          <svg viewBox="0 0 7 10" shapeRendering="crispEdges" className="h-14 w-auto md:h-16">
+          <svg viewBox="0 0 7 10" shapeRendering="crispEdges" className="h-16 w-auto md:h-24">
             {px(ROCKET_BODY, "rgba(244,241,234,0.85)", "b")}
             <rect x={3.05} y={2.05} width={0.9} height={0.9} fill="#71f6ff" />
             {px(ROCKET_FINS, "rgba(169,139,255,0.85)", "f")}
@@ -273,54 +350,108 @@ export default function HeroBackdrop() {
             <g className="hb-frame-alt">{px(FLAME_B, "#ff4d1c", "fb")}</g>
           </svg>
         </div>
-      </div>
+      </Link>
 
       {/* Marker doodles, drawn and redrawn by hand */}
-      <svg viewBox="0 0 60 60" className="absolute right-[24%] top-[16%] h-12 w-12 rotate-12 opacity-60 md:h-16 md:w-16" fill="none">
-        <path
-          d="M30 6 L34.5 22 51 22.5 38 33 42.5 50 30 40 17 50.5 21.5 33 9 22 25.5 22.5 Z"
-          stroke="#d9ff3d"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={240}
-          className="hb-draw"
-        />
-      </svg>
-      <svg viewBox="0 0 60 50" className="absolute left-[26%] top-[9%] hidden h-14 w-16 -rotate-6 opacity-50 md:block" fill="none">
-        <path
-          d="M28 26 C 32 20, 40 22, 39 29 C 38 36, 27 36, 24 29 C 20 20, 30 12, 41 15 C 52 18, 54 32, 45 40"
-          stroke="rgba(244,241,234,0.75)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          pathLength={240}
-          className="hb-draw"
-          style={{ animationDelay: "-2.5s" }}
-        />
-      </svg>
-      <svg viewBox="0 0 80 50" className="absolute bottom-[9%] right-[3%] hidden h-12 w-20 opacity-55 lg:block" fill="none">
-        <path
-          d="M6 10 C 26 4, 52 10, 66 30 M66 30 L56 24 M66 30 L64 18"
-          stroke="#71f6ff"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          pathLength={240}
-          className="hb-draw"
-          style={{ animationDelay: "-4s" }}
-        />
-      </svg>
-      <svg viewBox="0 0 90 20" className="absolute bottom-[30%] left-[9%] hidden h-5 w-24 -rotate-3 opacity-50 md:block" fill="none">
-        <path
-          d="M4 12 L16 6 L26 14 L38 5 L48 13 L60 6 L70 14 L84 7"
-          stroke="rgba(169,139,255,0.8)"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={240}
-          className="hb-draw"
-          style={{ animationDelay: "-1.5s" }}
-        />
-      </svg>
+      <Link href="/work" aria-label="See the work" className="pointer-events-auto absolute right-[8%] top-[22%] block rotate-12 opacity-60 transition duration-300 hover:scale-110 hover:opacity-100 md:left-[21%] md:right-auto md:top-[24%]">
+        <svg viewBox="0 0 60 60" className="h-12 w-12 md:h-16 md:w-16" fill="none">
+          <path
+            d="M30 6 L34.5 22 51 22.5 38 33 42.5 50 30 40 17 50.5 21.5 33 9 22 25.5 22.5 Z"
+            stroke="#d9ff3d"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={240}
+            className="hb-draw"
+          />
+        </svg>
+      </Link>
+      <Link href="/about" aria-label="About the studio" className="pointer-events-auto absolute left-[26%] top-[9%] hidden -rotate-6 opacity-50 transition duration-300 hover:scale-110 hover:opacity-100 md:block">
+        <svg viewBox="0 0 60 50" className="h-14 w-16" fill="none">
+          <path
+            d="M28 26 C 32 20, 40 22, 39 29 C 38 36, 27 36, 24 29 C 20 20, 30 12, 41 15 C 52 18, 54 32, 45 40"
+            stroke="rgba(244,241,234,0.75)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            pathLength={240}
+            className="hb-draw"
+            style={{ animationDelay: "-2.5s" }}
+          />
+        </svg>
+      </Link>
+      <Link href="/contact" aria-label="Get in touch" className="pointer-events-auto absolute bottom-[9%] right-[3%] hidden opacity-55 transition duration-300 hover:scale-110 hover:opacity-100 lg:block">
+        <svg viewBox="0 0 80 50" className="h-12 w-20" fill="none">
+          <path
+            d="M6 10 C 26 4, 52 10, 66 30 M66 30 L56 24 M66 30 L64 18"
+            stroke="#71f6ff"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            pathLength={240}
+            className="hb-draw"
+            style={{ animationDelay: "-4s" }}
+          />
+        </svg>
+      </Link>
+      <Link href="/services" aria-label="Explore the services" className="pointer-events-auto absolute bottom-[33%] left-[35%] hidden -rotate-3 opacity-50 transition duration-300 hover:scale-110 hover:opacity-100 md:block">
+        <svg viewBox="0 0 90 20" className="h-5 w-24" fill="none">
+          <path
+            d="M4 12 L16 6 L26 14 L38 5 L48 13 L60 6 L70 14 L84 7"
+            stroke="rgba(169,139,255,0.8)"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={240}
+            className="hb-draw"
+            style={{ animationDelay: "-1.5s" }}
+          />
+        </svg>
+      </Link>
+      <Link href="/services" aria-label="Fast builds: the services" className="pointer-events-auto absolute bottom-[33%] right-[28%] hidden rotate-6 opacity-55 transition duration-300 hover:scale-110 hover:opacity-100 md:block">
+        <svg viewBox="0 0 36 48" className="h-11 w-9" fill="none">
+          <path
+            d="M22 4 L10 26 L19 26 L14 44 L30 20 L20 20 L26 4 Z"
+            stroke="#ff4d1c"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={240}
+            className="hb-draw"
+            style={{ animationDelay: "-3s" }}
+          />
+        </svg>
+      </Link>
+      <Link href="/about" aria-label="The friendly humans behind 5cale" className="pointer-events-auto absolute bottom-[31%] right-[22%] block -rotate-6 opacity-55 transition duration-300 hover:scale-110 hover:opacity-100">
+        <svg viewBox="0 0 48 48" className="h-10 w-10 md:h-12 md:w-12" fill="none" stroke="rgba(244,241,234,0.7)" strokeWidth="2" strokeLinecap="round">
+          <path
+            d="M24 6 C 34 6 42 14 41 24 C 40 35 32 42 22 41 C 12 40 6 32 7 22 C 8 12 15 6 24 6"
+            pathLength={240}
+            className="hb-draw"
+            style={{ animationDelay: "-5s" }}
+          />
+          <path d="M18 18 L18 23" pathLength={240} className="hb-draw" style={{ animationDelay: "-5s" }} />
+          <path d="M30 17 L30 22" pathLength={240} className="hb-draw" style={{ animationDelay: "-5s" }} />
+          <path d="M15 29 C 19 35 29 35 33 28" pathLength={240} className="hb-draw" style={{ animationDelay: "-5s" }} />
+        </svg>
+      </Link>
+      <Link href="/contact" aria-label="Projects we will love" className="pointer-events-auto absolute bottom-[7%] left-[40%] hidden rotate-3 opacity-55 transition duration-300 hover:scale-110 hover:opacity-100 md:block">
+        <svg viewBox="0 0 40 40" className="h-9 w-9" fill="none">
+          <path
+            d="M20 34 C 6 24 4 12 12 8 C 17 5 20 9 20 12 C 20 9 23 5 28 8 C 36 12 34 24 20 34"
+            stroke="#ff4d1c"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={240}
+            className="hb-draw"
+            style={{ animationDelay: "-1s" }}
+          />
+        </svg>
+      </Link>
+      <Link href="/work" aria-label="Highlights from the work" className="pointer-events-auto absolute left-[33%] top-[5%] hidden rotate-12 opacity-55 transition duration-300 hover:scale-110 hover:opacity-100 lg:block">
+        <svg viewBox="0 0 40 40" className="h-10 w-10" fill="none" stroke="#5bf1a6" strokeWidth="2.2" strokeLinecap="round">
+          <path d="M20 4 L20 14 M20 26 L20 36 M4 20 L14 20 M26 20 L36 20 M9 9 L16 16 M24 24 L31 31 M31 9 L24 16 M16 24 L9 31" pathLength={240} className="hb-draw" style={{ animationDelay: "-6s" }} />
+        </svg>
+      </Link>
     </div>
   );
 }

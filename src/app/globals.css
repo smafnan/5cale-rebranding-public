@@ -34,11 +34,12 @@ html.lenis body {
 
 /* Scattered animation fragments (shatter cells, flying letters) must never
    create sideways scroll, especially on iOS. Clip the x axis at the root. */
+/* NOTE: html itself must stay background-free. The body background then
+   propagates to the root canvas and paints FIRST, which keeps the fixed
+   negative-z layers (3D five, hero collage) visible above it. A background
+   here would paint over both. */
 html {
   overflow-x: clip;
-  /* Painted root backdrop keeps mix-blend-mode: difference (the inverting
-     cursor) blending correctly in Safari. */
-  background: var(--bg);
 }
 
 body {

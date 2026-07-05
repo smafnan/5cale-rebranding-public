@@ -6,6 +6,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import ThemeController from "@/components/ThemeController";
 import PencilCursor from "@/components/PencilCursor";
 import InvertCursor from "@/components/InvertCursor";
+import ChatWidget from "@/components/ChatWidget";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 
@@ -59,6 +60,7 @@ export default function RootLayout({
           {children}
           <Footer />
         </SmoothScroll>
+        <ChatWidget />
         <PencilCursor />
         <InvertCursor />
       </body>

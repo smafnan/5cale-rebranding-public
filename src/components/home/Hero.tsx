@@ -62,18 +62,22 @@ export default function Hero() {
       });
 
       // The galaxy collage lags behind and dims, cheap parallax depth.
-      gsap.to("[data-hero-backdrop]", {
-        yPercent: 16,
-        opacity: 0.15,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ref.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
+      // (Portaled to <body>, so query the document, not the section.)
+      const backdrop = document.querySelector("[data-hero-backdrop]");
+      if (backdrop) {
+        gsap.to(backdrop, {
+          yPercent: 16,
+          opacity: 0.15,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ref.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        });
+      }
     }, ref);
     return () => ctx.revert();
   }, []);
