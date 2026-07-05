@@ -10,10 +10,11 @@ const ACT_KEYS = ["base", "seed", "build", "brand", "grow", "scale", "base"];
 const WHITE = new THREE.Color("#ffffff");
 
 // Waypoints for the journey across the page (everswap-style companion).
-const STOPS = [0, 0.16, 0.34, 0.52, 0.7, 0.88, 1];
-const PX = [1.9, -2.1, 2.1, 0.2, -2.3, 0, 0];
-const PY = [-0.2, 0.1, -0.1, 0.15, 0, 0.1, -0.1];
-const PS = [1, 0.8, 0.95, 1.28, 0.68, 1.05, 0.92];
+// Stops calibrated to the measured act ranges (acts span ~0.12–0.81 of the page).
+const STOPS = [0, 0.19, 0.33, 0.46, 0.6, 0.74, 1];
+const PX = [3.1, -2.1, 2.1, 0.2, -2.3, 0, 0];
+const PY = [0.6, 0.1, -0.1, 0.15, 0, 0.1, -0.1];
+const PS = [0.8, 0.75, 0.85, 1.12, 0.6, 1, 0.85];
 
 function track(p: number, vals: number[]) {
   let i = 0;
@@ -44,14 +45,48 @@ function makeFiveGeometry() {
     curveSegments: 3,
   });
   geo.center();
-  geo.scale(0.22, 0.22, 0.22);
+  geo.scale(0.2, 0.2, 0.2);
   return geo;
+}
+
+/** Studio-chrome matcap painted onto a small canvas — no env map, no fetch. */
+function makeMatcap() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const ctx = c.getContext("2d")!;
+
+  let g = ctx.createRadialGradient(96, 80, 10, 128, 128, 160);
+  g.addColorStop(0, "#ffffff");
+  g.addColorStop(0.25, "#e9e9f0");
+  g.addColorStop(0.5, "#9c9cac");
+  g.addColorStop(0.75, "#3e3e4a");
+  g.addColorStop(1, "#0c0c10");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+
+  // low bounce light
+  g = ctx.createRadialGradient(150, 212, 5, 150, 212, 90);
+  g.addColorStop(0, "rgba(255,255,255,0.55)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+
+  // hard specular hit
+  g = ctx.createRadialGradient(88, 70, 2, 88, 70, 34);
+  g.addColorStop(0, "rgba(255,255,255,0.95)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 export default function FiveMark() {
   const group = useRef<THREE.Group>(null);
   const solid = useRef<THREE.Mesh>(null);
-  const mat = useRef<THREE.MeshPhysicalMaterial>(null);
+  const mat = useRef<THREE.MeshMatcapMaterial>(null);
   const wireMat = useRef<THREE.MeshBasicMaterial>(null);
   const pointsRef = useRef<THREE.Points>(null);
   const pointsMat = useRef<THREE.PointsMaterial>(null);
@@ -95,6 +130,7 @@ export default function FiveMark() {
   }, [base]);
 
   const tintTarget = useMemo(() => new THREE.Color("#ffffff"), []);
+  const matcap = useMemo(() => makeMatcap(), []);
 
   useFrame((state, delta) => {
     const g = group.current;
@@ -120,7 +156,8 @@ export default function FiveMark() {
     g.position.y = THREE.MathUtils.damp(g.position.y, fy, 4, delta);
     g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, fs, 4, delta));
 
-    g.rotation.y = p * Math.PI * 5 + t * 0.14;
+    // ×4 → two full turns; ends front-facing for the "Ready to 5cale?" reveal.
+    g.rotation.y = p * Math.PI * 4 + t * 0.14;
     g.rotation.x = Math.sin(p * Math.PI * 2) * 0.22;
     g.rotation.z = THREE.MathUtils.damp(
       g.rotation.z,
@@ -175,15 +212,7 @@ export default function FiveMark() {
   return (
     <group ref={group} position={[1.9, -0.2, 0]}>
       <mesh ref={solid} geometry={geo}>
-        <meshPhysicalMaterial
-          ref={mat}
-          metalness={1}
-          roughness={0.16}
-          clearcoat={0.6}
-          clearcoatRoughness={0.25}
-          envMapIntensity={1.25}
-          transparent
-        />
+        <meshMatcapMaterial ref={mat} matcap={matcap} transparent />
       </mesh>
       <mesh geometry={geo} scale={1.002}>
         <meshBasicMaterial ref={wireMat} wireframe transparent opacity={0} />
