@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 5CALE® — Rebranding
 
-## Getting Started
+The full 360° rebrand of [5cale.com](https://5cale.com), built from scratch around one idea:
 
-First, run the development server:
+> **5cale = Scale.** Every brand climbs five acts — SEED → BUILD → BRAND → GROW → SCALE.
+
+## The system
+
+- **Five acts, five worlds** — scrolling the home page repaints the entire site (background, ink, accent) per act.
+- **The 3D "5"** — a chrome companion (React Three Fiber) that travels with you as you scroll: wireframes in BUILD, changes tint per act, disperses into particles in SCALE and reforms for the CTA.
+- **Pencil cursor** — the pointer draws fading strokes in the current accent color (desktop only).
+- **Hover walkthrough** — services open like an index as you sweep over them; deliverable tags drop and pile with a bounce.
+- **Identity** — wordmark `5CALE` in expanded Archivo Black; mark = five ascending bars (staircase / equalizer / 5).
+
+## Stack
+
+Next.js (App Router, TS) · Tailwind v4 · GSAP + ScrollTrigger · Lenis · three.js + React Three Fiber + drei
+
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev    # http://localhost:3000
+npm run build  # production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Before launch — placeholders to swap
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `CONTACT_EMAIL` in `src/lib/data.ts` (currently hello@5cale.com)
+- `PROJECTS` in `src/lib/data.ts` — replace with real case studies
+- Social links in `Footer.tsx` / `contact/page.tsx` (currently `#`)
+- Contact form uses `mailto:` — wire to a form backend (Resend / Formspree / API route)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Accessibility: all signature motion respects `prefers-reduced-motion`; the 3D scene falls back to a calm rotating mark.
