@@ -36,6 +36,9 @@ html.lenis body {
    create sideways scroll, especially on iOS. Clip the x axis at the root. */
 html {
   overflow-x: clip;
+  /* Painted root backdrop keeps mix-blend-mode: difference (the inverting
+     cursor) blending correctly in Safari. */
+  background: var(--bg);
 }
 
 body {
@@ -181,6 +184,82 @@ body {
   animation: pageIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Hero backdrop: galaxy and studio collage motion */
+.hb-float {
+  animation: hbFloat var(--dur, 7s) ease-in-out var(--delay, 0s) infinite alternate;
+}
+@keyframes hbFloat {
+  from {
+    transform: translateY(-9px);
+  }
+  to {
+    transform: translateY(9px);
+  }
+}
+
+/* Terminal card: an endless upward stream of code (list is duplicated,
+   so -50% loops seamlessly) */
+.hb-scroll {
+  animation: hbScroll var(--dur, 14s) linear infinite;
+}
+@keyframes hbScroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* Doodles draw themselves in, hold, then undraw (paths use pathLength=240) */
+.hb-draw {
+  stroke-dasharray: 240;
+  animation: hbDraw 7s ease-in-out infinite;
+}
+@keyframes hbDraw {
+  0% {
+    stroke-dashoffset: 240;
+  }
+  45% {
+    stroke-dashoffset: 0;
+  }
+  72% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -240;
+  }
+}
+
+/* Infographic bars breathe */
+.hb-bar {
+  transform-origin: bottom;
+  animation: hbBar 2.6s ease-in-out infinite alternate;
+}
+@keyframes hbBar {
+  from {
+    transform: scaleY(0.5);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Two-frame pixel sprite flicker (steps = real frame-by-frame feel) */
+.hb-frame {
+  animation: hbFrame 0.8s steps(1) infinite;
+}
+.hb-frame-alt {
+  animation: hbFrame 0.8s steps(1) -0.4s infinite;
+}
+@keyframes hbFrame {
+  0%,
+  49.9% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee {
     animation: none;
@@ -190,5 +269,13 @@ body {
   }
   html {
     scroll-behavior: auto;
+  }
+  .hb-float,
+  .hb-scroll,
+  .hb-draw,
+  .hb-bar,
+  .hb-frame,
+  .hb-frame-alt {
+    animation: none;
   }
 }

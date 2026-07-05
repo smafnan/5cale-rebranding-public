@@ -3,11 +3,24 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import HeroBackdrop from "@/components/home/HeroBackdrop";
+
+gsap.registerPlugin(ScrollTrigger);
+
+// Where each letter of 5CALE flies as you scroll down (fractions of the
+// viewport, so the dispersion scales with the screen). Middle letter
+// drifts straight up; the rest scatter outward.
+const SCATTER_X = [-0.42, -0.2, 0.02, 0.24, 0.46];
+const SCATTER_Y = [-0.16, 0.28, -0.34, 0.22, -0.12];
+const SCATTER_R = [-32, 22, -12, 28, -24];
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const ctx = gsap.context(() => {
       gsap.from("[data-hero-char]", {
         y: 90,
@@ -25,6 +38,42 @@ export default function Hero() {
         delay: 0.7,
         ease: "power3.out",
       });
+
+      if (reduced) return;
+
+      // Scroll down and the word breaks apart: every letter departs on
+      // its own trajectory, scrubbed to the scrollbar so it reassembles
+      // when you come back up.
+      gsap.utils.toArray<HTMLElement>("[data-hero-scatter]").forEach((el, i) => {
+        gsap.to(el, {
+          x: () => SCATTER_X[i % 5] * window.innerWidth,
+          y: () => SCATTER_Y[i % 5] * window.innerHeight,
+          rotation: SCATTER_R[i % 5],
+          opacity: 0,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ref.current,
+            start: "top top",
+            end: "bottom 25%",
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        });
+      });
+
+      // The galaxy collage lags behind and dims, cheap parallax depth.
+      gsap.to("[data-hero-backdrop]", {
+        yPercent: 16,
+        opacity: 0.15,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
     }, ref);
     return () => ctx.revert();
   }, []);
@@ -34,6 +83,8 @@ export default function Hero() {
       ref={ref}
       className="relative z-20 flex min-h-svh flex-col justify-between px-5 pb-8 pt-28 md:px-8"
     >
+      <HeroBackdrop />
+
       <div data-hero-fade className="flex justify-between">
         <p className="label opacity-70">Digital growth studio</p>
         <p className="label hidden opacity-70 md:block">Websites · Apps · Brands · AI</p>
@@ -45,8 +96,10 @@ export default function Hero() {
       >
         <span aria-hidden>
           {"5CALE".split("").map((c, i) => (
-            <span key={i} data-hero-char className="inline-block">
-              {c}
+            <span key={i} data-hero-scatter className="inline-block will-change-transform">
+              <span data-hero-char className="inline-block">
+                {c}
+              </span>
             </span>
           ))}
         </span>
