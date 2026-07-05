@@ -1,12 +1,23 @@
-/** The 5cale mark: five ascending bars — a staircase, an equalizer, a 5. */
-export default function LogoMark({ className = "h-5 w-auto" }: { className?: string }) {
+/** The 5cale pixel mark: a bitmap "5" on a 5×7 grid. */
+export default function LogoMark({ className = "h-6 w-auto" }: { className?: string }) {
+  const rows = [
+    "XXXXX",
+    "X....",
+    "XXXX.",
+    "....X",
+    "....X",
+    "X...X",
+    ".XXX.",
+  ];
   return (
-    <svg viewBox="0 0 26 20" fill="currentColor" className={className} aria-hidden>
-      <rect x="0" y="14" width="3.5" height="6" />
-      <rect x="5.5" y="11" width="3.5" height="9" />
-      <rect x="11" y="8" width="3.5" height="12" />
-      <rect x="16.5" y="4" width="3.5" height="16" />
-      <rect x="22" y="0" width="3.5" height="20" />
+    <svg viewBox="0 0 5 7" fill="currentColor" className={className} aria-hidden>
+      {rows.flatMap((row, r) =>
+        row.split("").map((cell, c) =>
+          cell === "X" ? (
+            <rect key={`${r}-${c}`} x={c + 0.06} y={r + 0.06} width={0.88} height={0.88} />
+          ) : null
+        )
+      )}
     </svg>
   );
 }

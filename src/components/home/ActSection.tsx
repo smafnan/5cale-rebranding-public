@@ -39,7 +39,7 @@ function Signature({ act }: { act: Act }) {
       );
     case "brand":
       return (
-        <div className="display text-5xl leading-[0.95] md:text-[3.6vw]" aria-hidden>
+        <div className="font-slash text-5xl leading-[1.05] md:text-[3.4vw]" aria-hidden>
           {[0, 1, 2].map((i) => (
             <div key={i} data-stretch className={i === 1 ? "text-[var(--accent)]" : ""}>
               5CALE
@@ -49,15 +49,15 @@ function Signature({ act }: { act: Act }) {
       );
     case "grow":
       return (
-        <div className="flex h-48 items-end gap-3" aria-hidden>
+        <div className="flex h-40 items-end gap-3 md:h-48" aria-hidden>
           {[0.35, 0.5, 0.65, 0.82, 1].map((h, i) => (
-            <div key={i} data-grow-bar className="w-10 bg-[var(--accent)]" style={{ height: `${h * 100}%` }} />
+            <div key={i} data-grow-bar className="w-8 bg-[var(--accent)] md:w-10" style={{ height: `${h * 100}%` }} />
           ))}
         </div>
       );
     case "scale":
       return (
-        <div className="relative flex h-56 w-56 items-center justify-center" aria-hidden>
+        <div className="relative flex h-48 w-48 items-center justify-center md:h-56 md:w-56" aria-hidden>
           <div
             className="absolute inset-0 animate-spin rounded-full border border-dashed border-current/40"
             style={{ animationDuration: "14s" }}
@@ -66,7 +66,7 @@ function Signature({ act }: { act: Act }) {
             className="absolute inset-6 animate-spin rounded-full border border-dotted border-[var(--accent)]"
             style={{ animationDuration: "9s", animationDirection: "reverse" }}
           />
-          <span className="display text-6xl text-[var(--accent)]">5×</span>
+          <span className="font-pixel text-5xl text-[var(--accent)] md:text-6xl">5X</span>
         </div>
       );
   }
@@ -79,12 +79,68 @@ export default function ActSection({ act }: { act: Act }) {
   useEffect(() => {
     const el = ref.current!;
     const ctx = gsap.context(() => {
-      gsap.from("[data-act-title]", {
-        yPercent: 110,
-        duration: 1,
-        ease: "power4.out",
-        scrollTrigger: { trigger: el, start: "top 70%" },
-      });
+      const chars = el.querySelectorAll("[data-act-char]");
+      const title = el.querySelector("[data-act-title]");
+      const enter = { trigger: el, start: "top 70%" };
+
+      // Every act's title arrives with its own move (readymag variety).
+      switch (act.key) {
+        case "seed":
+          gsap.fromTo(
+            title,
+            { clipPath: "inset(0 100% 0 0)" },
+            { clipPath: "inset(0 -5% 0 0)", duration: 1.1, ease: "power4.inOut", scrollTrigger: enter }
+          );
+          break;
+        case "build":
+          // Emergence: letters fly in from scattered positions and assemble.
+          gsap.from(chars, {
+            x: () => gsap.utils.random(-180, 180),
+            y: () => gsap.utils.random(-140, 140),
+            rotation: () => gsap.utils.random(-50, 50),
+            autoAlpha: 0,
+            duration: 1,
+            stagger: 0.05,
+            ease: "power3.out",
+            scrollTrigger: enter,
+          });
+          break;
+        case "brand":
+          gsap.from(title, {
+            scaleX: 1.7,
+            transformOrigin: "left center",
+            autoAlpha: 0,
+            duration: 1,
+            ease: "power3.out",
+            scrollTrigger: enter,
+          });
+          break;
+        case "grow":
+          gsap.from(chars, {
+            yPercent: 130,
+            autoAlpha: 0,
+            duration: 0.8,
+            stagger: 0.06,
+            ease: "back.out(2)",
+            scrollTrigger: enter,
+          });
+          break;
+        case "scale":
+          gsap.fromTo(
+            title,
+            { filter: "blur(18px)", letterSpacing: "0.3em", autoAlpha: 0 },
+            {
+              filter: "blur(0px)",
+              letterSpacing: "0.01em",
+              autoAlpha: 1,
+              duration: 1.1,
+              ease: "power2.out",
+              scrollTrigger: enter,
+            }
+          );
+          break;
+      }
+
       gsap.from("[data-act-fade]", {
         y: 30,
         autoAlpha: 0,
@@ -117,18 +173,20 @@ export default function ActSection({ act }: { act: Act }) {
         });
       }
 
-      // Parallax on the giant hollow act number.
-      gsap.fromTo(
-        "[data-act-number]",
-        { yPercent: 18 },
-        {
-          yPercent: -18,
-          ease: "none",
-          scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true },
-        }
-      );
+      // Parallax on the giant act number (desktop only, where it's absolute).
+      if (window.matchMedia("(min-width: 768px)").matches) {
+        gsap.fromTo(
+          "[data-act-number]",
+          { yPercent: 14 },
+          {
+            yPercent: -14,
+            ease: "none",
+            scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true },
+          }
+        );
+      }
 
-      // — Per-act signature animations —
+      // Per-act signature animations.
       if (act.key === "seed") {
         const path = el.querySelector<SVGPathElement>("[data-sketch-path]");
         if (path) {
@@ -145,7 +203,6 @@ export default function ActSection({ act }: { act: Act }) {
         }
       }
       if (act.key === "build") {
-        // Scattered cells assemble into the grid (emergence reference).
         gsap.from("[data-build-cell]", {
           x: () => gsap.utils.random(-260, 260),
           y: () => gsap.utils.random(-200, 200),
@@ -157,17 +214,15 @@ export default function ActSection({ act }: { act: Act }) {
         });
       }
       if (act.key === "brand") {
-        // Kinetic variable-width type.
-        gsap.fromTo(
-          "[data-stretch]",
-          { fontStretch: "62.5%" },
-          {
-            fontStretch: "125%",
-            ease: "none",
-            stagger: 0.05,
-            scrollTrigger: { trigger: el, start: "top 70%", end: "center 40%", scrub: 1 },
-          }
-        );
+        gsap.from("[data-stretch]", {
+          xPercent: -30,
+          scaleX: 2.2,
+          transformOrigin: "left center",
+          autoAlpha: 0,
+          stagger: 0.08,
+          ease: "none",
+          scrollTrigger: { trigger: el, start: "top 70%", end: "center 40%", scrub: 1 },
+        });
       }
       if (act.key === "grow") {
         gsap.from("[data-grow-bar]", {
@@ -188,18 +243,26 @@ export default function ActSection({ act }: { act: Act }) {
     <section
       ref={ref}
       data-act-theme={act.key}
-      className="relative z-20 flex min-h-[120vh] items-center px-5 py-32 md:px-8"
+      className="relative z-20 flex min-h-[100svh] items-center overflow-x-clip px-5 py-24 md:min-h-[120vh] md:px-8 md:py-32"
     >
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-14 md:grid-cols-12">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 md:grid-cols-12 md:gap-14">
         <div className="md:col-span-7">
           <p data-act-fade className="label mb-4 opacity-60">
             [ Act {act.num} ]
           </p>
-          <div className="overflow-hidden">
-            <h2 data-act-title className="display text-[17vw] md:text-[9vw]">
-              {act.title}
-            </h2>
-          </div>
+          <h2
+            data-act-title
+            aria-label={act.title}
+            className="font-slash text-[16vw] md:text-[8.5vw]"
+          >
+            <span aria-hidden>
+              {act.title.split("").map((c, i) => (
+                <span key={i} data-act-char className="inline-block">
+                  {c}
+                </span>
+              ))}
+            </span>
+          </h2>
           <p data-act-fade className="display mt-5 text-2xl text-[var(--accent)] md:text-4xl">
             {act.kicker}
           </p>
@@ -219,7 +282,7 @@ export default function ActSection({ act }: { act: Act }) {
           <div
             data-act-number
             aria-hidden
-            className="display outline-text pointer-events-none absolute -top-28 right-0 -z-10 text-[38vw] opacity-40 md:text-[15vw]"
+            className="font-brickline pointer-events-none mb-4 text-right text-[24vw] leading-none text-[var(--accent)] opacity-60 md:absolute md:-top-28 md:right-0 md:mb-0 md:text-[12vw]"
           >
             {act.num}
           </div>

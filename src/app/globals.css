@@ -32,6 +32,12 @@ html.lenis body {
   overflow: hidden;
 }
 
+/* Scattered animation fragments (shatter cells, flying letters) must never
+   create sideways scroll, especially on iOS. Clip the x axis at the root. */
+html {
+  overflow-x: clip;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
@@ -55,6 +61,49 @@ body {
 }
 .display-wide {
   font-stretch: 125%;
+}
+
+/* ——— Brand display fonts (mix from "fonts for 5cale") ———
+   Archivo is the per-glyph fallback, so missing characters degrade gracefully. */
+.font-pixel {
+  font-family: var(--font-goblock), var(--font-archivo), Impact, sans-serif;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.font-slash {
+  font-family: var(--font-slash), var(--font-archivo), Impact, sans-serif;
+  text-transform: uppercase;
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+}
+.font-brick {
+  font-family: var(--font-brick), var(--font-archivo), Impact, sans-serif;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.font-brickline {
+  font-family: var(--font-brickline), var(--font-archivo), Impact, sans-serif;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.font-punk {
+  font-family: var(--font-punk), var(--font-grotesk), monospace;
+  text-transform: uppercase;
+}
+
+/* Custom inverting cursor replaces the native pointer on precise pointers */
+@media (pointer: fine) {
+  html,
+  body,
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  label,
+  [role="button"] {
+    cursor: none;
+  }
 }
 
 /* Hollow type — takes the current act ink color */

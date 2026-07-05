@@ -88,7 +88,15 @@ export default function ThemeController() {
     ScrollTrigger.addEventListener("refresh", measure);
     ScrollTrigger.refresh();
 
+    // Custom display fonts change layout heights when they land; re-measure
+    // every trigger so entrances and act ranges stay in sync.
+    let cancelled = false;
+    document.fonts?.ready.then(() => {
+      if (!cancelled) ScrollTrigger.refresh();
+    });
+
     return () => {
+      cancelled = true;
       triggers.forEach((t) => t.kill());
       pageTrigger.kill();
       ScrollTrigger.removeEventListener("refresh", measure);

@@ -11,10 +11,11 @@ const WHITE = new THREE.Color("#ffffff");
 
 // Waypoints for the journey across the page (everswap-style companion).
 // Stops calibrated to the measured act ranges (acts span ~0.12–0.81 of the page).
+// X keeps the mark on the opposite side of each act's text column.
 const STOPS = [0, 0.19, 0.33, 0.46, 0.6, 0.74, 1];
-const PX = [3.1, -2.1, 2.1, 0.2, -2.3, 0, 0];
-const PY = [0.6, 0.1, -0.1, 0.15, 0, 0.1, -0.1];
-const PS = [0.8, 0.75, 0.85, 1.12, 0.6, 1, 0.85];
+const PX = [3.2, 2.7, -4.2, 2.6, 2.6, 0, 0];
+const PY = [0.8, 0.1, -0.1, 0.15, 0, 0.1, -0.2];
+const PS = [0.8, 0.75, 0.85, 1.12, 0.6, 1, 0.7];
 
 function track(p: number, vals: number[]) {
   let i = 0;
@@ -150,7 +151,10 @@ export default function FiveMark() {
     // — Journey path —
     const fx = track(p, PX) * (mobile ? 0.3 : 1);
     const fy = track(p, PY) + Math.sin(t * 0.8) * 0.1;
-    const fs = track(p, PS) * (mobile ? 0.6 : 1);
+    const fs = track(p, PS) * (mobile ? 0.55 : 1);
+    // On phones everything shares the center column, so run the mark
+    // more transparent to protect text contrast.
+    const mobileFade = mobile ? 0.55 : 1;
 
     g.position.x = THREE.MathUtils.damp(g.position.x, fx, 4, delta);
     g.position.y = THREE.MathUtils.damp(g.position.y, fy, 4, delta);
@@ -174,7 +178,7 @@ export default function FiveMark() {
 
     // — BUILD act: blueprint wireframe overlay —
     if (wireMat.current) {
-      const target = act === 2 ? 0.55 : 0;
+      const target = (act === 2 ? 0.55 : 0) * mobileFade;
       wireMat.current.opacity = THREE.MathUtils.damp(wireMat.current.opacity, target, 5, delta);
       wireMat.current.color.set(accent);
     }
@@ -189,11 +193,13 @@ export default function FiveMark() {
     explodeRef.current = THREE.MathUtils.damp(explodeRef.current, explode, 5, delta);
     const ex = explodeRef.current;
 
-    if (mat.current) mat.current.opacity = 1 - ex * 0.92;
+    // Fade near the very end so footer columns stay readable.
+    const endFade = 1 - THREE.MathUtils.smoothstep(p, 0.9, 1) * 0.7;
+    if (mat.current) mat.current.opacity = (1 - ex * 0.92) * endFade * mobileFade;
     if (solid.current) solid.current.visible = ex < 0.98;
 
     if (pointsMat.current) {
-      pointsMat.current.opacity = ex;
+      pointsMat.current.opacity = ex * mobileFade;
       pointsMat.current.color.set(accent);
     }
     if (pointsRef.current) {

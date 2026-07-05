@@ -10,7 +10,7 @@ export default function ContactForm() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`New project — ${form.name || "hello"}`);
+    const subject = encodeURIComponent(`New project: ${form.name || "hello"}`);
     const body = encodeURIComponent(
       `Name: ${form.name}\nEmail: ${form.email}\n\nThe project:\n${form.about}`
     );
@@ -18,7 +18,7 @@ export default function ContactForm() {
   };
 
   const field =
-    "w-full border-b border-current/30 bg-transparent py-3 text-lg outline-none transition-colors placeholder:opacity-40 focus:border-[var(--accent)]";
+    "w-full border-b border-current/30 bg-transparent py-3 text-lg outline-none transition-colors placeholder:opacity-60 focus:border-[var(--accent)]";
 
   return (
     <form onSubmit={submit} className="flex w-full max-w-xl flex-col gap-8">

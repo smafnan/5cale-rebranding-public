@@ -5,7 +5,7 @@ import { CONTACT_EMAIL } from "@/lib/data";
 export default function BigCTA() {
   return (
     <section className="relative z-20 py-16">
-      <Marquee className="display border-y border-current/15 py-4 text-3xl md:text-5xl" speed={20}>
+      <Marquee className="font-punk border-y border-current/15 py-4 text-2xl md:text-4xl" speed={20}>
         <span className="mx-6">Make it</span>
         <span className="text-[var(--accent)]">●</span>
         <span className="mx-6">Ship it</span>
@@ -16,12 +16,12 @@ export default function BigCTA() {
         <span className="text-[var(--accent)]">●</span>
       </Marquee>
 
-      <div className="flex flex-col items-center px-5 py-32 text-center">
-        <p className="label mb-6 opacity-60">[ Act ∞ — yours ]</p>
-        <h2 className="display text-[13vw] leading-[0.85] md:text-[9vw]">
+      <div className="flex flex-col items-center px-5 py-28 text-center md:py-32">
+        <p className="label mb-6 opacity-60">[ Act ∞: yours ]</p>
+        <h2 className="font-brick text-[13vw] leading-[0.95] md:text-[8.5vw]">
           Ready to
           <br />
-          <span className="outline-accent">5cale?</span>
+          <span className="text-[var(--accent)]">5cale?</span>
         </h2>
         <div className="mt-10 flex flex-col items-center gap-4 md:flex-row">
           <Link

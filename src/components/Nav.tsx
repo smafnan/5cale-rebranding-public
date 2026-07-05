@@ -31,9 +31,9 @@ export default function Nav() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-[70] flex items-center justify-between px-5 py-4 md:px-8">
-        <Link href="/" onClick={close} className="flex items-center gap-2.5" aria-label="5cale — home">
-          <LogoMark className="h-5 w-auto text-[var(--accent)]" />
-          <span className="display text-xl tracking-tight">5CALE®</span>
+        <Link href="/" onClick={close} className="flex items-center gap-2.5" aria-label="5cale home">
+          <LogoMark className="h-6 w-auto text-[var(--accent)]" />
+          <span className="font-pixel pt-0.5 text-lg tracking-wide md:text-xl">5CALE</span>
         </Link>
 
         <div className="flex items-center gap-3">
@@ -53,7 +53,7 @@ export default function Nav() {
         </div>
       </header>
 
-      {/* Fullscreen menu — always void-dark regardless of the current act */}
+      {/* Fullscreen menu, always void-dark regardless of the current act */}
       <div
         ref={overlayRef}
         className="pointer-events-none fixed inset-0 z-[60] flex flex-col justify-between bg-[#0b0b0b] px-5 pb-10 pt-28 text-[#f4f1ea] md:px-8"
@@ -66,7 +66,7 @@ export default function Nav() {
                 data-menu-link
                 href={link.href}
                 onClick={close}
-                className="display group flex items-baseline gap-4 py-3 text-[13vw] leading-none transition-colors hover:text-[#d9ff3d] md:text-[6.5vw]"
+                className="font-slash group flex items-baseline gap-4 py-4 text-[11vw] leading-none transition-colors hover:text-[#d9ff3d] md:text-[5.5vw]"
               >
                 <span className="label text-white/40 group-hover:text-[#d9ff3d]">0{i + 1}</span>
                 {link.label}

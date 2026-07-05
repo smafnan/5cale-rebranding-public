@@ -7,10 +7,10 @@ export default function Footer() {
     <footer className="relative overflow-hidden border-t border-current/15 px-5 pb-8 pt-16 md:px-8">
       <div className="mb-14 flex flex-col gap-10 md:flex-row md:justify-between">
         <div className="max-w-sm">
-          <LogoMark className="mb-5 h-6 w-auto text-[var(--accent)]" />
+          <LogoMark className="mb-5 h-7 w-auto text-[var(--accent)]" />
           <p className="text-sm leading-relaxed opacity-70">
-            The growth studio for brands that refuse to stay small. Strategy, build, brand,
-            growth and AI — in five acts.
+            The growth studio for brands that refuse to stay small. Strategy,
+            build, brand, growth and AI, in five acts.
           </p>
         </div>
 
@@ -35,13 +35,16 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Giant hollow wordmark */}
-      <div aria-hidden className="display outline-text select-none text-center text-[24vw] leading-[0.8]">
+      {/* Giant hollow pixel wordmark */}
+      <div
+        aria-hidden
+        className="font-pixel outline-text select-none text-center text-[19vw] leading-none"
+      >
         5CALE
       </div>
 
       <div className="mt-6 flex flex-col gap-1 text-xs opacity-50 md:flex-row md:justify-between">
-        <span>© 2026 5cale — built to multiply.</span>
+        <span>© 2026 5cale. Built to multiply.</span>
         <span>From idea to inevitable.</span>
       </div>
     </footer>

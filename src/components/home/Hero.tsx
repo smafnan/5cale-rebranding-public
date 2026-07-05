@@ -10,10 +10,11 @@ export default function Hero() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from("[data-hero-char]", {
-        yPercent: 115,
+        y: 90,
+        autoAlpha: 0,
         duration: 0.9,
-        stagger: 0.05,
-        ease: "power4.out",
+        stagger: 0.06,
+        ease: "back.out(1.4)",
         delay: 0.15,
       });
       gsap.from("[data-hero-fade]", {
@@ -35,16 +36,17 @@ export default function Hero() {
     >
       <div data-hero-fade className="flex justify-between">
         <p className="label opacity-70">Digital growth studio</p>
-        <p className="label hidden opacity-70 md:block">Websites — Apps — Brands — AI</p>
+        <p className="label hidden opacity-70 md:block">Websites · Apps · Brands · AI</p>
       </div>
 
-      <h1 aria-label="5CALE" className="display select-none text-center text-[24vw] leading-[0.8] md:text-[20vw]">
+      <h1
+        aria-label="5CALE"
+        className="font-pixel select-none text-center text-[19vw] leading-none md:text-[15.5vw]"
+      >
         <span aria-hidden>
           {"5CALE".split("").map((c, i) => (
-            <span key={i} className="inline-block overflow-hidden align-bottom">
-              <span data-hero-char className="inline-block">
-                {c}
-              </span>
+            <span key={i} data-hero-char className="inline-block">
+              {c}
             </span>
           ))}
         </span>
@@ -53,9 +55,9 @@ export default function Hero() {
       <div className="flex flex-col items-start gap-6 md:flex-row md:items-end md:justify-between">
         <p data-hero-fade className="max-w-md text-lg leading-snug md:text-xl">
           The growth studio for brands that refuse to stay small.
-          From idea to inevitable — in five acts.
+          From idea to inevitable, in five acts.
         </p>
-        <div data-hero-fade className="flex items-center gap-3">
+        <div data-hero-fade className="flex flex-wrap items-center gap-3">
           <Link
             href="/contact"
             className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-medium uppercase tracking-wide text-[#0b0b0b] transition-transform hover:scale-105"
@@ -72,7 +74,7 @@ export default function Hero() {
       </div>
 
       <p data-hero-fade className="label pt-8 text-center opacity-60">
-        Scroll — the climb has five acts ↓
+        Scroll. The climb has five acts ↓
       </p>
     </section>
   );

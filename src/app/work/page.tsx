@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import WorkGrid from "@/components/work/WorkGrid";
+import Reveal from "@/components/Reveal";
 
 export const metadata: Metadata = {
   title: "Work",
@@ -11,15 +12,19 @@ export default function WorkPage() {
     <main data-page-theme="base" className="px-5 pb-24 pt-36 md:px-8">
       <div className="mx-auto max-w-6xl">
         <p className="label mb-4 opacity-60">[ Selected work ]</p>
-        <h1 className="display mb-6 text-6xl md:text-[7vw]">
-          Proof,
-          <br />
-          not promises.
-        </h1>
-        <p className="mb-16 max-w-md text-lg opacity-80">
-          A slice of what leaves the studio. Full case studies are being
-          written — ask us for the tour.
-        </p>
+        <Reveal variant="wipe">
+          <h1 className="font-slash mb-6 text-6xl md:text-[6.5vw]">
+            Proof,
+            <br />
+            not promises.
+          </h1>
+        </Reveal>
+        <Reveal variant="blur" delay={0.12}>
+          <p className="mb-16 max-w-md text-lg opacity-80">
+            A slice of what leaves the studio. Full case studies are being
+            written. Ask us for the tour.
+          </p>
+        </Reveal>
         <WorkGrid />
       </div>
     </main>

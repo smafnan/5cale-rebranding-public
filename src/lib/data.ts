@@ -1,5 +1,5 @@
-// ——— 5CALE brand data: the FIVE ACTS system ———
-// NOTE: PROJECTS are styled placeholders — swap in real case studies.
+// 5CALE brand data: the FIVE ACTS system.
+// NOTE: PROJECTS are styled placeholders. Swap in real case studies.
 
 export type ActTheme = { bg: string; ink: string; accent: string };
 
@@ -29,7 +29,7 @@ export const ACTS: Act[] = [
     key: "seed",
     title: "SEED",
     kicker: "Every giant starts as a sketch.",
-    copy: "Strategy, research and product thinking. We find the sharpest version of your idea — then draw the map from here to inevitable.",
+    copy: "Strategy, research and product thinking. We find the sharpest version of your idea, then draw the map from here to inevitable.",
     chips: ["Strategy", "Research", "Product thinking", "Innovation"],
   },
   {
@@ -38,7 +38,7 @@ export const ACTS: Act[] = [
     key: "build",
     title: "BUILD",
     kicker: "Blueprints become products.",
-    copy: "High-performance websites, mobile apps and Shopify stores — engineered to feel expensive and load instantly.",
+    copy: "High-performance websites, mobile apps and Shopify stores, engineered to feel expensive and load instantly.",
     chips: ["Websites", "Mobile apps", "Shopify", "E-commerce"],
   },
   {
@@ -47,7 +47,7 @@ export const ACTS: Act[] = [
     key: "brand",
     title: "BRAND",
     kicker: "A face people can't forget.",
-    copy: "Identity, voice and content that make you look like the category leader — before you are one.",
+    copy: "Identity, voice and content that make you look like the category leader before you are one.",
     chips: ["Branding", "Content creation", "Art direction", "Copywriting"],
   },
   {
@@ -65,7 +65,7 @@ export const ACTS: Act[] = [
     key: "scale",
     title: "SCALE",
     kicker: "Intelligence, integrated.",
-    copy: "AI woven into your product and your pipeline — the part of your team that never sleeps.",
+    copy: "AI woven into your product and your pipeline: the part of your team that never sleeps.",
     chips: ["AI integration", "Automation", "Personalisation", "R&D"],
   },
 ];
@@ -87,7 +87,7 @@ export const SERVICES: Service[] = [
   {
     title: "Mobile apps",
     act: "BUILD",
-    blurb: "iOS and Android products people keep on their home screen — from prototype to store release.",
+    blurb: "iOS and Android products people keep on their home screen, from prototype to store release.",
     deliverables: ["Product design", "Cross-platform builds", "App store launch", "Analytics"],
   },
   {
@@ -105,7 +105,7 @@ export const SERVICES: Service[] = [
   {
     title: "Content creation",
     act: "BRAND",
-    blurb: "Photo, video, motion and words — a content engine that keeps your brand loud every week.",
+    blurb: "Photo, video, motion and words: a content engine that keeps your brand loud every week.",
     deliverables: ["Art direction", "Video & motion", "Copywriting", "Content systems"],
   },
   {
@@ -123,7 +123,7 @@ export const SERVICES: Service[] = [
   {
     title: "Search engine optimisation",
     act: "GROW",
-    blurb: "Technical, content and authority — compounding rankings instead of rented attention.",
+    blurb: "Technical, content and authority. Compounding rankings instead of rented attention.",
     deliverables: ["Technical audits", "Content strategy", "Link building", "Local SEO"],
   },
   {
@@ -148,7 +148,7 @@ export type Project = {
   to: string;
 };
 
-// Placeholder case studies — replace with real work.
+// Placeholder case studies. Replace with real work.
 export const PROJECTS: Project[] = [
   { title: "Nova Habitat", tags: ["Shopify", "Brand"], year: "2026", from: "#d9ff3d", to: "#0d3b2e" },
   { title: "Trackpace", tags: ["Mobile app", "AI"], year: "2026", from: "#a98bff", to: "#1626b8" },
@@ -166,5 +166,5 @@ export const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-// Placeholder — swap to the real inbox before launch.
+// Placeholder. Swap to the real inbox before launch.
 export const CONTACT_EMAIL = "hello@5cale.com";
