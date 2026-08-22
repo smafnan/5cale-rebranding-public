@@ -78,6 +78,43 @@ export default function ActSection({ act }: { act: Act }) {
 
   useEffect(() => {
     const el = ref.current!;
+    // Every animation below is a scroll-triggered gsap.from(), which
+    // immediate-renders its "from" state the instant it's created (GSAP's
+    // default for .from() tweens) regardless of scroll position — so for
+    // reduced-motion we skip creating them at all rather than letting them
+    // run, otherwise content would flash to a hidden/scattered state.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // Parallax on the giant act number (desktop only, where it's absolute —
+    // in-flow on mobile, so animating it there would just jitter the layout).
+    // Tracked outside gsap.context and re-synced on resize so crossing the
+    // 768px breakpoint mid-session (not just at mount) turns it on/off.
+    let numberTween: gsap.core.Tween | null = null;
+    const syncNumberParallax = () => {
+      // Scoped to this section's own DOM subtree via el.querySelectorAll —
+      // a plain string selector here would match every act section's
+      // number on the page, since this runs outside gsap.context's
+      // automatic selector-text scoping (see below).
+      const numberEl = el.querySelectorAll("[data-act-number]");
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      if (isDesktop && !numberTween) {
+        numberTween = gsap.fromTo(
+          numberEl,
+          { yPercent: 14 },
+          {
+            yPercent: -14,
+            ease: "none",
+            scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true },
+          }
+        );
+      } else if (!isDesktop && numberTween) {
+        numberTween.scrollTrigger?.kill();
+        numberTween.kill();
+        numberTween = null;
+        gsap.set(numberEl, { yPercent: 0 });
+      }
+    };
+
     const ctx = gsap.context(() => {
       const chars = el.querySelectorAll("[data-act-char]");
       const title = el.querySelector("[data-act-title]");
@@ -173,19 +210,6 @@ export default function ActSection({ act }: { act: Act }) {
         });
       }
 
-      // Parallax on the giant act number (desktop only, where it's absolute).
-      if (window.matchMedia("(min-width: 768px)").matches) {
-        gsap.fromTo(
-          "[data-act-number]",
-          { yPercent: 14 },
-          {
-            yPercent: -14,
-            ease: "none",
-            scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true },
-          }
-        );
-      }
-
       // Per-act signature animations.
       if (act.key === "seed") {
         const path = el.querySelector<SVGPathElement>("[data-sketch-path]");
@@ -236,7 +260,15 @@ export default function ActSection({ act }: { act: Act }) {
       }
     }, el);
 
-    return () => ctx.revert();
+    syncNumberParallax();
+    window.addEventListener("resize", syncNumberParallax);
+
+    return () => {
+      ctx.revert();
+      window.removeEventListener("resize", syncNumberParallax);
+      numberTween?.scrollTrigger?.kill();
+      numberTween?.kill();
+    };
   }, [act]);
 
   return (

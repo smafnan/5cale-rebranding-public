@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function WorkPage() {
   return (
-    <main data-page-theme="base" className="px-5 pb-24 pt-36 md:px-8">
+    <main id="main-content" tabIndex={-1} data-page-theme="base" className="px-5 pb-24 pt-36 md:px-8 focus:outline-none">
       <div className="mx-auto max-w-6xl">
         <p className="label mb-4 opacity-60">[ Selected work ]</p>
         <Reveal variant="wipe">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { cursorStore } from "@/lib/cursor-store";
 
 type Point = { x: number; y: number; t: number };
 
@@ -27,25 +28,37 @@ export default function PencilCursor() {
     let points: Point[] = [];
     let raf = 0;
     let dpr = 1;
+    // CSS-pixel size of the canvas's own rendered box (not window.innerWidth/
+    // innerHeight — those include the scrollbar gutter, which the canvas's
+    // own 100%-width box excludes, so using window size here would leave a
+    // few pixels of drift toward the right/bottom edge).
+    let cssWidth = 0;
+    let cssHeight = 0;
 
     const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      cssWidth = rect.width;
+      cssHeight = rect.height;
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
+      canvas.width = cssWidth * dpr;
+      canvas.height = cssHeight * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
     };
 
-    const onMove = (e: PointerEvent) => {
-      points.push({ x: e.clientX, y: e.clientY, t: performance.now() });
-      if (points.length > 400) points = points.slice(-400);
-    };
-
     const draw = () => {
       const now = performance.now();
+      // Sample the cursor's eased position (same value InvertCursor's "5"
+      // icon is rendered at that frame) rather than raw pointer events —
+      // otherwise the line runs ahead of the icon it's meant to trail from
+      // whenever the mouse moves fast.
+      if (cursorStore.ready) {
+        points.push({ x: cursorStore.x, y: cursorStore.y, t: now });
+        if (points.length > 400) points = points.slice(-400);
+      }
       points = points.filter((p) => now - p.t < LIFETIME);
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
 
       const accent =
         getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#d9ff3d";
@@ -68,13 +81,11 @@ export default function PencilCursor() {
 
     resize();
     window.addEventListener("resize", resize);
-    window.addEventListener("pointermove", onMove);
     raf = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("pointermove", onMove);
     };
   }, []);
 
@@ -82,7 +93,15 @@ export default function PencilCursor() {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[90]"
+      // w-full/h-full are load-bearing here, not decorative: <canvas> is a
+      // replaced element, so "fixed inset-0" alone (which stretches a plain
+      // div to the viewport) does NOT stretch it — it falls back to the
+      // width/height attributes below (the DPR-scaled backing-store size).
+      // Without an explicit CSS size, the canvas's on-screen box renders at
+      // that backing resolution instead of the viewport size, scaling
+      // (and offsetting) every drawn point by ~devicePixelRatio versus
+      // where the cursor actually is.
+      className="pointer-events-none fixed inset-0 z-[90] h-full w-full"
     />
   );
 }

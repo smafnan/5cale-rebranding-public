@@ -54,6 +54,15 @@ body {
   color: #0b0b0b;
 }
 
+/* Keyboard focus: the custom cursor only hides the native pointer icon
+   (pointer:fine), it never touches :focus — but nothing styled focus
+   consistently either, so give keyboard users one clear, branded ring. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 /* Big editorial display type (Archivo variable, expanded + black) */
 .display {
   font-family: var(--font-archivo), Impact, sans-serif;

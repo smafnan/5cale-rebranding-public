@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function ServicesPage() {
   return (
-    <main data-page-theme="base" className="pb-16 pt-36">
+    <main id="main-content" tabIndex={-1} data-page-theme="base" className="pb-16 pt-36 focus:outline-none">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <p className="label mb-4 opacity-60">[ What we do ]</p>
         <Reveal variant="wipe">

@@ -8,7 +8,7 @@ import { ACTS } from "@/lib/data";
 
 export default function Home() {
   return (
-    <main data-page-theme="base">
+    <main id="main-content" tabIndex={-1} data-page-theme="base" className="focus:outline-none">
       <FiveScene />
       <Hero />
 
