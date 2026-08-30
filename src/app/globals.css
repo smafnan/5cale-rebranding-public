@@ -56,11 +56,46 @@ body {
 
 /* Keyboard focus: the custom cursor only hides the native pointer icon
    (pointer:fine), it never touches :focus — but nothing styled focus
-   consistently either, so give keyboard users one clear, branded ring. */
+   consistently either, so give keyboard users one clear, branded ring.
+   No border-radius here: that property applies to the ELEMENT, not the
+   outline, so setting it would square off every focused pill on the site
+   (the rounded-full header buttons especially). Browsers already conform
+   the outline to whatever radius the element itself carries. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 2px;
+}
+
+/* Skip link: visually hidden until it takes keyboard focus, then a real
+   chip in the top-left corner. Written as one class rather than Tailwind's
+   `sr-only focus:not-sr-only` pair — `not-sr-only` carries `padding: 0`,
+   which both outranks `px-4 py-2` on specificity (0,2,0 vs 0,1,0) and is
+   emitted after it, so the chip would flatten to zero padding at exactly
+   the moment it becomes visible. */
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skip-link:focus {
+  position: fixed;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 100;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  white-space: nowrap;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  background: var(--accent);
+  color: #0b0b0b;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 /* Big editorial display type (Archivo variable, expanded + black) */

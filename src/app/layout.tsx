@@ -57,10 +57,7 @@ export default function RootLayout({
           managers, etc.) inject attributes into <body> before React
           hydrates, which otherwise trips a false-positive mismatch warning. */}
       <body suppressHydrationWarning>
-        <a
-          href="#main-content"
-          className="sr-only z-[100] rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[#0b0b0b] focus:not-sr-only focus:fixed focus:left-5 focus:top-5"
-        >
+        <a href="#main-content" className="skip-link">
           Skip to content
         </a>
         <SmoothScroll>

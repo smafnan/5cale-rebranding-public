@@ -28,6 +28,8 @@ export default function PencilCursor() {
     let points: Point[] = [];
     let raf = 0;
     let dpr = 1;
+    let lastX = NaN;
+    let lastY = NaN;
     // CSS-pixel size of the canvas's own rendered box (not window.innerWidth/
     // innerHeight — those include the scrollbar gutter, which the canvas's
     // own 100%-width box excludes, so using window size here would leave a
@@ -53,8 +55,14 @@ export default function PencilCursor() {
       // icon is rendered at that frame) rather than raw pointer events —
       // otherwise the line runs ahead of the icon it's meant to trail from
       // whenever the mouse moves fast.
-      if (cursorStore.ready) {
-        points.push({ x: cursorStore.x, y: cursorStore.y, t: now });
+      // Only on actual movement: sampling per frame regardless would push a
+      // fresh point every ~16ms while the mouse sits still, which never
+      // exceeds GAP and keeps re-feeding the LIFETIME filter, so the trail
+      // would never clear — it would leave a dot parked under the cursor.
+      if (cursorStore.ready && (cursorStore.x !== lastX || cursorStore.y !== lastY)) {
+        lastX = cursorStore.x;
+        lastY = cursorStore.y;
+        points.push({ x: lastX, y: lastY, t: now });
         if (points.length > 400) points = points.slice(-400);
       }
       points = points.filter((p) => now - p.t < LIFETIME);

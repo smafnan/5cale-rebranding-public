@@ -10,7 +10,18 @@ import LogoMark from "./LogoMark";
 export default function Nav() {
   const [open, setOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const close = () => setOpen(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // Hand focus back to the toggle on the way out. The overlay goes `inert`
+  // the instant `open` flips, and a focused descendant of an inert subtree
+  // is blurred to <body> — so a keyboard user who Escapes out of the menu
+  // would otherwise lose their place and tab from the top of the document.
+  const close = () => {
+    if (overlayRef.current?.contains(document.activeElement)) {
+      toggleRef.current?.focus();
+    }
+    setOpen(false);
+  };
 
   useEffect(() => {
     const el = overlayRef.current;
@@ -74,12 +85,20 @@ export default function Nav() {
   return (
     <>
       {/* Backdrop scrim: without it, large scrolling headlines read directly
-          through the header and collide with the logo/menu button. */}
+          through the header and collide with the logo/menu button.
+          While the menu is open the header sits ABOVE the overlay (z-70 vs
+          z-60), so the scrim has to switch to the overlay's own void-dark
+          instead of the page theme — on a light act (seed's #f2eee3, say)
+          the page-tinted scrim under the forced #f4f1ea text lands at about
+          1.6:1 contrast, and leaves a pale band across the top of an
+          otherwise black menu. */}
       <header
         className={`fixed inset-x-0 top-0 z-[70] flex items-center justify-between px-5 py-4 backdrop-blur-md transition-colors duration-300 md:px-8 ${
           open ? "text-[#f4f1ea]" : ""
         }`}
-        style={{ background: "color-mix(in srgb, var(--bg) 80%, transparent)" }}
+        style={{
+          background: open ? "#0b0b0b" : "color-mix(in srgb, var(--bg) 80%, transparent)",
+        }}
       >
         <Link href="/" onClick={close} className="flex items-center gap-2.5" aria-label="5cale home">
           <LogoMark className={`h-6 w-auto ${open ? "text-[#d9ff3d]" : "text-[var(--accent)]"}`} />
@@ -94,6 +113,7 @@ export default function Nav() {
             Start a project
           </Link>
           <button
+            ref={toggleRef}
             onClick={() => setOpen((v) => !v)}
             className="label cursor-pointer rounded-full border border-current px-5 py-2.5 transition-colors hover:bg-[var(--ink)] hover:text-[var(--bg)]"
             aria-expanded={open}
