@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ContactForm from "@/components/ContactForm";
 import Reveal from "@/components/Reveal";
+import SocialLink from "@/components/SocialLink";
 import { CONTACT_EMAIL } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main data-page-theme="brand" className="px-5 pb-24 pt-36 md:px-8">
+    <main id="main-content" tabIndex={-1} data-page-theme="brand" className="px-5 pb-24 pt-36 md:px-8 focus:outline-none">
       <div className="mx-auto max-w-6xl">
         <p className="label mb-4 opacity-60">[ New business ]</p>
         <Reveal variant="pop">
@@ -41,9 +42,9 @@ export default function ContactPage() {
               <div>
                 <p className="label mb-2 opacity-60">Elsewhere</p>
                 <div className="flex gap-4 md:justify-end">
-                  <a href="#" className="link-sweep">Instagram</a>
-                  <a href="#" className="link-sweep">LinkedIn</a>
-                  <a href="#" className="link-sweep">X</a>
+                  <SocialLink>Instagram</SocialLink>
+                  <SocialLink>LinkedIn</SocialLink>
+                  <SocialLink>X</SocialLink>
                 </div>
               </div>
             </div>

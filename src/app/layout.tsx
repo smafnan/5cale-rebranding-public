@@ -53,7 +53,13 @@ export default function RootLayout({
       lang="en"
       className={`${archivo.variable} ${grotesk.variable} ${goblock.variable} ${paperSlash.variable} ${brick.variable} ${brickLine.variable} ${roost.variable} antialiased`}
     >
-      <body>
+      {/* suppressHydrationWarning: browser extensions (Grammarly, password
+          managers, etc.) inject attributes into <body> before React
+          hydrates, which otherwise trips a false-positive mismatch warning. */}
+      <body suppressHydrationWarning>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <SmoothScroll>
           <ThemeController />
           <Nav />

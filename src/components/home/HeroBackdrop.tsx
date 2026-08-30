@@ -312,7 +312,7 @@ export default function HeroBackdrop() {
       <Link
         href="/about"
         aria-label="The numbers behind the studio: about 5cale"
-        className="group pointer-events-auto absolute bottom-[4%] left-[6%] hidden w-56 rotate-[2.5deg] opacity-70 transition duration-300 hover:scale-[1.04] hover:opacity-100 lg:block"
+        className="group pointer-events-auto absolute bottom-[32%] left-[6%] hidden w-56 rotate-[2.5deg] opacity-70 transition duration-300 hover:scale-[1.04] hover:opacity-100 lg:block"
       >
         <div className="hb-float rounded-lg border border-white/12 bg-[#101014]/80 p-4" style={{ "--dur": "9s", "--delay": "-4s" } as React.CSSProperties}>
           <p className="label text-[9px] text-white/45">Reach, five acts in</p>

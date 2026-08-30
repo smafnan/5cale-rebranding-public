@@ -2,7 +2,11 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-6 px-5 text-center">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-svh flex-col items-center justify-center gap-6 px-5 text-center focus:outline-none"
+    >
       <p className="label opacity-60">[ Lost between acts ]</p>
       <h1 className="font-punk text-[26vw] leading-none text-[var(--accent)] md:text-[14vw]">404</h1>
       <p className="max-w-sm opacity-80">

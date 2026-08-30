@@ -13,8 +13,17 @@ const WHITE = new THREE.Color("#ffffff");
 // Stops calibrated to the measured act ranges (acts span ~0.12–0.81 of the page).
 // X keeps the mark on the opposite side of each act's text column.
 const STOPS = [0, 0.19, 0.33, 0.46, 0.6, 0.74, 1];
-const PX = [3.2, 2.7, -4.2, 2.6, 2.6, 0, 0];
-const PY = [0.8, 0.1, -0.1, 0.15, 0, 0.1, -0.2];
+// PX[0] and PX[5] pushed further out, and PY raised through the GROW
+// stretch (.46-.6), so the mark clears the hero wordmark and the
+// per-act signature art (bar chart / rings) it used to land on top of.
+// PX[2] was -4.2 (the only leftward value in the whole track), which swung
+// the mark across into the BUILD/BRAND acts' text column — verified via
+// screenshot at p=0.28 (covering the BUILD act's "E-COMMERCE" chip) and
+// p=0.35 (cutting through the BRAND headline and body copy). Text always
+// sits in the left column (ActSection's md:col-span-7) with the signature
+// art on the right, so this track should stay positive throughout.
+const PX = [4.5, 2.7, 3.0, 2.6, 2.6, 3.4, 0];
+const PY = [0.8, 0.1, -0.1, 1.1, 1.1, 1.0, -0.2];
 const PS = [0.8, 0.75, 0.85, 1.12, 0.6, 1, 0.7];
 
 function track(p: number, vals: number[]) {
@@ -193,8 +202,11 @@ export default function FiveMark() {
     explodeRef.current = THREE.MathUtils.damp(explodeRef.current, explode, 5, delta);
     const ex = explodeRef.current;
 
-    // Fade near the very end so footer columns stay readable.
-    const endFade = 1 - THREE.MathUtils.smoothstep(p, 0.9, 1) * 0.7;
+    // Fade through the final approach so the CTA marquee and "Ready to
+    // 5cale?" headline stay readable — widened from a 0.9-1 window after
+    // screenshots showed the mark still fully opaque and sitting directly
+    // on the marquee (p=0.83) and on the headline's "?" (p=0.9).
+    const endFade = 1 - THREE.MathUtils.smoothstep(p, 0.75, 1) * 0.7;
     if (mat.current) mat.current.opacity = (1 - ex * 0.92) * endFade * mobileFade;
     if (solid.current) solid.current.visible = ex < 0.98;
 

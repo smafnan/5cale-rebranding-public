@@ -16,6 +16,9 @@ export default function TagDrop() {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    // See ShatterTile/ActSection: gsap.from() immediate-renders its "from"
+    // state on creation, so reduced-motion needs to skip setup entirely.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = gsap.context(() => {
       gsap.from("[data-tag]", {
         y: -420,

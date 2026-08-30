@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NAV_LINKS, CONTACT_EMAIL } from "@/lib/data";
 import LogoMark from "./LogoMark";
+import SocialLink from "./SocialLink";
 
 export default function Footer() {
   return (
@@ -28,9 +29,9 @@ export default function Footer() {
             <a href={`mailto:${CONTACT_EMAIL}`} className="link-sweep w-fit text-sm">
               {CONTACT_EMAIL}
             </a>
-            <a href="#" className="link-sweep w-fit text-sm">Instagram</a>
-            <a href="#" className="link-sweep w-fit text-sm">LinkedIn</a>
-            <a href="#" className="link-sweep w-fit text-sm">X / Twitter</a>
+            <SocialLink className="link-sweep w-fit text-sm">Instagram</SocialLink>
+            <SocialLink className="link-sweep w-fit text-sm">LinkedIn</SocialLink>
+            <SocialLink className="link-sweep w-fit text-sm">X / Twitter</SocialLink>
           </div>
         </div>
       </div>
@@ -43,7 +44,10 @@ export default function Footer() {
         5CALE
       </div>
 
-      <div className="mt-6 flex flex-col gap-1 text-xs opacity-50 md:flex-row md:justify-between">
+      {/* md:pr-20 reserves the bottom-right corner for the fixed ChatWidget
+          launcher (h-13 w-13 at bottom-5 right-5), which otherwise sits
+          directly on top of this line at desktop widths. */}
+      <div className="mt-6 flex flex-col gap-1 text-xs opacity-50 md:flex-row md:justify-between md:pr-20">
         <span>© 2026 5cale. Built to multiply.</span>
         <span>From idea to inevitable.</span>
       </div>

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main data-page-theme="seed" className="pb-24 pt-36">
+    <main id="main-content" tabIndex={-1} data-page-theme="seed" className="pb-24 pt-36 focus:outline-none">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <p className="label mb-4 opacity-60">
           [ <ScrambleText text="The studio" /> ]

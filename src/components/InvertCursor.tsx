@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { cursorStore } from "@/lib/cursor-store";
 
 // The cursor is the brand mark itself: the bitmap "5" from LogoMark.
 const ROWS = ["XXXXX", "X....", "XXXX.", "....X", "....X", "X...X", ".XXX."];
@@ -31,8 +32,20 @@ export default function InvertCursor() {
     gsap.set(el, { autoAlpha: 0 });
     let seen = false;
 
-    const xTo = gsap.quickTo(el, "x", { duration: 0.15, ease: "power3.out" });
-    const yTo = gsap.quickTo(el, "y", { duration: 0.15, ease: "power3.out" });
+    const xTo = gsap.quickTo(el, "x", {
+      duration: 0.15,
+      ease: "power3.out",
+      onUpdate: () => {
+        cursorStore.x = gsap.getProperty(el, "x") as number;
+      },
+    });
+    const yTo = gsap.quickTo(el, "y", {
+      duration: 0.15,
+      ease: "power3.out",
+      onUpdate: () => {
+        cursorStore.y = gsap.getProperty(el, "y") as number;
+      },
+    });
 
     const isInteractive = (t: EventTarget | null) =>
       t instanceof Element &&
@@ -42,6 +55,9 @@ export default function InvertCursor() {
       if (!seen) {
         seen = true;
         gsap.set(el, { x: e.clientX, y: e.clientY });
+        cursorStore.x = e.clientX;
+        cursorStore.y = e.clientY;
+        cursorStore.ready = true;
         gsap.to(el, { autoAlpha: 1, duration: 0.2 });
       }
       xTo(e.clientX);
