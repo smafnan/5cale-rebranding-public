@@ -21,6 +21,10 @@ export default function ChatWidget() {
   ]);
   const listRef = useRef<HTMLDivElement>(null);
   const replyCount = useRef(0);
+  const replyTimer = useRef<number | undefined>(undefined);
+
+  // Cancel any reply still in flight if the widget unmounts (route change).
+  useEffect(() => () => window.clearTimeout(replyTimer.current), []);
 
   // Keep the newest message in view.
   useEffect(() => {
@@ -46,7 +50,7 @@ export default function ChatWidget() {
     setMsgs((m) => [...m, { from: "user", text }]);
     const reply = REPLIES[replyCount.current % REPLIES.length];
     replyCount.current += 1;
-    window.setTimeout(() => {
+    replyTimer.current = window.setTimeout(() => {
       setMsgs((m) => [...m, { from: "bot", text: reply }]);
     }, 700);
   };

@@ -275,8 +275,15 @@ body {
   .hb-scroll,
   .hb-draw,
   .hb-bar,
-  .hb-frame,
+  .hb-frame {
+    animation: none;
+  }
+  /* Without the flicker keyframes, both flame frames default to their
+     resting opacity (1) and render stacked on top of each other. Hide
+     the second frame so reduced-motion users see one clean flame
+     instead of a double-exposed blend of both colors. */
   .hb-frame-alt {
     animation: none;
+    display: none;
   }
 }

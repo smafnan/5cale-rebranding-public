@@ -28,6 +28,18 @@ export default function PencilCursor() {
     let raf = 0;
     let dpr = 1;
 
+    // Read once up front, then only when ThemeController actually changes
+    // the CSS var — calling getComputedStyle on every animation frame
+    // (60/s) forces a style recalc for no reason most of the time.
+    let accent =
+      getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#d9ff3d";
+    const refreshAccent = () => {
+      accent =
+        getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || accent;
+    };
+    const accentObserver = new MutationObserver(refreshAccent);
+    accentObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = window.innerWidth * dpr;
@@ -47,8 +59,6 @@ export default function PencilCursor() {
       points = points.filter((p) => now - p.t < LIFETIME);
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-      const accent =
-        getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#d9ff3d";
       ctx.strokeStyle = accent;
       ctx.lineWidth = 2.25;
 
@@ -73,6 +83,7 @@ export default function PencilCursor() {
 
     return () => {
       cancelAnimationFrame(raf);
+      accentObserver.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
     };
