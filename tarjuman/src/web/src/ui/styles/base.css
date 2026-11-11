@@ -1,0 +1,510 @@
+/*
+ * Design tokens, element defaults and the small form controls.
+ *
+ * Colours are defined once with light-dark(): `color-scheme` on <html> (set from the
+ * data-theme attribute) decides which side applies, so there is no second dark palette
+ * to keep in sync.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#f4f5f7, #101216);
+  --surface: light-dark(#ffffff, #181b21);
+  --surface-2: light-dark(#f0f2f5, #20242c);
+  --surface-3: light-dark(#e6e9ee, #2a2f39);
+  --border: light-dark(#d9dde4, #313743);
+  --border-strong: light-dark(#b9c0cc, #465064);
+  --text: light-dark(#161a22, #eceff4);
+  --text-muted: light-dark(#5b6472, #a2abba);
+  --text-faint: light-dark(#7d8695, #7f899a);
+
+  --accent: light-dark(#2f55d4, #7c9cff);
+  --accent-strong: light-dark(#2343b0, #9db4ff);
+  --accent-contrast: light-dark(#ffffff, #0d1220);
+  --accent-soft: light-dark(#e8edfc, #1f2a4a);
+
+  /* The two channels. Always paired with a text label, never colour alone. */
+  --out: light-dark(#2f55d4, #7c9cff);
+  --out-soft: light-dark(#eef2fd, #1b2440);
+  --in: light-dark(#0b7a6e, #4fd1c0);
+  --in-soft: light-dark(#e6f5f2, #142e2b);
+
+  --ok: light-dark(#1a7f43, #56d68a);
+  --ok-soft: light-dark(#e4f5ea, #16301f);
+  --warn: light-dark(#9a6200, #f0b54a);
+  --warn-soft: light-dark(#fdf1d8, #35290f);
+  --danger: light-dark(#c0282d, #ff8086);
+  --danger-soft: light-dark(#fde8e8, #3a1719);
+
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 14px;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 16px rgb(0 0 0 / 0.06);
+  --shadow-pop: 0 8px 32px rgb(0 0 0 / 0.22);
+
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-urdu-nastaliq: 'Noto Nastaliq Urdu Variable', 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+  --font-urdu-naskh: 'Noto Naskh Arabic Variable', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, sans-serif;
+
+  /* Set from the Appearance settings. */
+  --caption-scale: 1;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px / 1.45 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Urdu (and any other Arabic-script language): typeface chosen in the settings. */
+.script-arab {
+  font-family: var(--font-urdu-nastaliq);
+  line-height: 2.15;
+}
+
+:root[data-urdu-font='naskh'] .script-arab {
+  font-family: var(--font-urdu-naskh);
+  line-height: 1.75;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.button--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.button--primary:hover:not(:disabled) {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.button--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.button--quiet {
+  border-color: transparent;
+  background: transparent;
+  font-weight: 500;
+}
+
+.button--small {
+  min-height: 28px;
+  padding: 3px 9px;
+  font-size: 13px;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge--accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------------ fields */
+
+.field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.field__label {
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.field__note {
+  color: var(--text-faint);
+  font-size: 12.5px;
+}
+
+.field__note--warn {
+  color: var(--warn);
+}
+
+.field__note--danger {
+  color: var(--danger);
+}
+
+.select,
+.input,
+.textarea {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+}
+
+.select {
+  text-overflow: ellipsis;
+}
+
+.textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.select:disabled,
+.input:disabled,
+.textarea:disabled {
+  opacity: 0.6;
+}
+
+.is-disabled {
+  opacity: 0.55;
+}
+
+/* switch */
+
+.switch {
+  display: grid;
+  gap: 2px;
+}
+
+.switch__control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.switch__control input {
+  position: absolute;
+  opacity: 0;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch__track {
+  flex: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition: background 0.12s;
+}
+
+.switch__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  transition: transform 0.12s;
+}
+
+.switch__control input:checked + .switch__track {
+  background: var(--accent);
+}
+
+.switch__control input:checked + .switch__track::after {
+  transform: translateX(14px);
+}
+
+.switch__control input:focus-visible + .switch__track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.switch__label {
+  font-weight: 500;
+}
+
+.switch__note {
+  padding-left: 43px;
+}
+
+/* slider */
+
+.slider {
+  display: grid;
+  gap: 2px;
+}
+
+.slider__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.slider__value {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.slider input[type='range'] {
+  width: 100%;
+  margin: 2px 0;
+  accent-color: var(--accent);
+}
+
+/* segmented control */
+
+.segmented {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmented__options {
+  display: flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.segmented__option {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.segmented__option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmented__option span {
+  display: block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 550;
+  text-align: center;
+}
+
+.segmented__option input:checked + span {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.14);
+  color: var(--text);
+}
+
+.segmented__option input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------ dialog */
+
+.dialog {
+  width: min(760px, calc(100vw - 24px));
+  max-height: min(820px, calc(100dvh - 24px));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+
+.dialog::backdrop {
+  background: rgb(8 10 16 / 0.5);
+}
+
+.dialog__frame {
+  display: flex;
+  flex-direction: column;
+  max-height: min(820px, calc(100dvh - 26px));
+}
+
+.dialog__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dialog__title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.dialog__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px 22px;
+}
+
+.dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 12.5px;
+}

@@ -12,7 +12,11 @@ let cachedToken: string | null | undefined;
 
 export function getAccessToken(): string | null {
   if (cachedToken !== undefined) return cachedToken;
-  let token: string | null = null;
+  cachedToken = readToken();
+  return cachedToken;
+}
+
+function readToken(): string | null {
   try {
     const url = new URL(globalThis.location.href);
     const fromUrl = url.searchParams.get('token');
@@ -20,13 +24,13 @@ export function getAccessToken(): string | null {
       globalThis.sessionStorage?.setItem(TOKEN_STORAGE_KEY, fromUrl);
       url.searchParams.delete('token');
       globalThis.history?.replaceState(null, '', url.toString());
+      return fromUrl;
     }
-    token = fromUrl ?? globalThis.sessionStorage?.getItem(TOKEN_STORAGE_KEY) ?? null;
+    return globalThis.sessionStorage?.getItem(TOKEN_STORAGE_KEY) ?? null;
   } catch {
-    token = null;
+    // No usable location or storage (private mode): behave as if no token was given.
+    return null;
   }
-  cachedToken = token;
-  return token;
 }
 
 export class ApiError extends Error {

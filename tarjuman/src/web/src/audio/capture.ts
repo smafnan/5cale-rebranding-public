@@ -1,4 +1,4 @@
-import { MicVAD } from '@ricky0123/vad-web';
+import type { MicVAD } from '@ricky0123/vad-web';
 
 import { Segmenter, type Segment, type SegmenterOptions } from './segmenter';
 
@@ -62,6 +62,8 @@ export class CaptureChannel {
    */
   async start(stream: MediaStream): Promise<void> {
     await this.stop();
+    // Loaded on first use: the detector and its ONNX runtime are most of the page's JavaScript.
+    const { MicVAD } = await import('@ricky0123/vad-web');
     const vad = await MicVAD.new({
       model: 'v5',
       baseAssetPath: VAD_ASSET_PATH,

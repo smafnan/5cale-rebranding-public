@@ -179,8 +179,8 @@ function clean(value: unknown): string {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
 }
 
-const ARABIC_SCRIPT = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/gu;
-const DEVANAGARI = /[ऀ-ॿ]/u;
+const ARABIC_SCRIPT = /[\u0600-\u06ff\u0750-\u077f\ufb50-\ufdff\ufe70-\ufefc]/gu;
+const DEVANAGARI = /[\u0900-\u097f]/u;
 const LETTER = /\p{L}/gu;
 
 /** Share of letters that are in Arabic script, 0..1 (1 for text without letters). */

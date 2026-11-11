@@ -14,6 +14,14 @@ async function main(): Promise<void> {
       level: config.logLevel,
       // Never let a key that ends up in an error object reach the log.
       redact: ['req.headers.authorization', 'req.headers.cookie', '*.apiKey', '*.key'],
+      serializers: {
+        // Log the path only: the WebSocket URL carries the access token in its query string.
+        req: (request: { method?: string; url?: string; ip?: string }) => ({
+          method: request.method,
+          url: request.url?.split('?')[0],
+          remoteAddress: request.ip,
+        }),
+      },
       ...(pretty ? { transport: { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' } } } : {}),
     },
   });

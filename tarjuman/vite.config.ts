@@ -18,11 +18,16 @@ export default defineConfig({
     // at run time by URL, so they are shipped as plain files under /vad/ (never from a CDN).
     viteStaticCopy({
       targets: [
-        { src: path.resolve(import.meta.dirname, 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js'), dest: 'vad' },
-        { src: path.resolve(import.meta.dirname, 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx'), dest: 'vad' },
-        { src: path.resolve(import.meta.dirname, 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded*.wasm'), dest: 'vad' },
-        { src: path.resolve(import.meta.dirname, 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded*.mjs'), dest: 'vad' },
-      ],
+        'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js',
+        'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx',
+        'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',
+        'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',
+      ].map((file) => ({
+        src: path.resolve(import.meta.dirname, file),
+        dest: 'vad',
+        // Copy the files themselves, not their node_modules/... directory structure.
+        rename: { stripBase: true },
+      })),
     }),
   ],
   // Inline (empty) PostCSS config: stops Vite from picking up a postcss.config.* in a parent folder.

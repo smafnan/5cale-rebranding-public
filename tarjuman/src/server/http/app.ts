@@ -52,8 +52,6 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
   const app = Fastify({
     logger: options.logger ?? false,
     bodyLimit: 64 * 1024,
-    // API keys travel in request bodies; never log them.
-    disableRequestLogging: true,
   });
 
   await app.register(fastifyWebsocket, { options: { maxPayload: WS_MAX_PAYLOAD_BYTES } });
@@ -62,7 +60,7 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
     reply.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'no-referrer');
-    reply.header('Permissions-Policy', 'microphone=(self), display-capture=(self), speaker-selection=(self), camera=()');
+    reply.header('Permissions-Policy', 'microphone=(self), display-capture=(self), camera=(), geolocation=()');
     // Lets the page keep precise timers and a responsive audio thread when cross-origin isolated.
     reply.header('Cross-Origin-Opener-Policy', 'same-origin');
   });

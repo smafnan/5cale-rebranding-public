@@ -177,7 +177,7 @@ export function judgeTranscript(text: string, evidence: TranscriptEvidence): Tra
 
   // Urdu audio transcribed in Devanagari, or German audio in Arabic script, means the recognizer
   // slipped into another language. (Latin text on the Urdu channel is fine: English is mixed in.)
-  if (evidence.lang === 'ur' && /[ऀ-ॿ]/u.test(text)) {
+  if (evidence.lang === 'ur' && /[\u0900-\u097f]/u.test(text)) {
     return { keep: false, reason: 'hallucination', detail: 'wrong script (Devanagari)' };
   }
   if (evidence.lang !== 'ur' && /\p{L}/u.test(text) && arabicScriptRatio(text) > 0.5) {
