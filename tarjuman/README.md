@@ -113,7 +113,8 @@ limits and how to change them: [docs/PROVIDERS.md](docs/PROVIDERS.md).
   and Google in the US, Microsoft for the voice). Free tiers may come with weaker data
   terms than paid ones. Do not use the free setup for confidential meetings, tell
   participants that the call is being interpreted by software, and check your company's
-  rules. Meeting content is never written to Tarjuman's own logs.
+  rules. Meeting content is never written to Tarjuman's own logs. You can restrict exactly
+  which providers are ever contacted; see [docs/PROVIDERS.md](docs/PROVIDERS.md).
 - **Google's terms** require its paid tier for applications offered to users in the EEA,
   the UK and Switzerland. Leave the Gemini key out, or enable billing on it, if that applies to you.
 - **The keyless voice** uses the endpoint the Edge browser uses for "Read aloud". It is not

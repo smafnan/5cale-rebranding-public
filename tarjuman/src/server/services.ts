@@ -188,17 +188,39 @@ function buildProviders(keys: KeyStore, env: NodeJS.ProcessEnv, mock: boolean): 
   return { stt, mt, tts };
 }
 
-/** Apply an explicit order (ids listed first, in that order); unlisted providers keep their place after them. */
-export function applyOrder<P extends ProviderBase>(providers: P[], order: string[] | undefined): P[] {
-  if (!order || order.length === 0) return providers;
-  const listed = order.map((id) => providers.find((p) => p.id === id)).filter((p): p is P => p !== undefined);
-  return [...listed, ...providers.filter((p) => !listed.includes(p))];
+export interface ProviderSelection<P> {
+  providers: P[];
+  /** Ids from the configured list that match no provider (typos, retired ids). */
+  unknown: string[];
+}
+
+/**
+ * Apply an explicit provider list. The list is exclusive: only the listed providers are
+ * used, in that order. This is what makes "translate locally only" or "never send audio to
+ * provider X" a guarantee rather than a preference. Without a list, all providers are used
+ * in their default order.
+ */
+export function selectProviders<P extends ProviderBase>(
+  all: P[],
+  order: string[] | undefined,
+): ProviderSelection<P> {
+  if (!order || order.length === 0) return { providers: all, unknown: [] };
+  const providers: P[] = [];
+  const unknown: string[] = [];
+  for (const id of order) {
+    const match = all.find((provider) => provider.id === id);
+    if (!match) unknown.push(id);
+    else if (!providers.includes(match)) providers.push(match);
+  }
+  return { providers, unknown };
 }
 
 export interface Services {
   readonly config: AppConfig;
   readonly keys: KeyStore;
   readonly chains: PipelineChains;
+  /** Configuration problems worth showing at start-up (e.g. unknown provider ids). */
+  readonly warnings: readonly string[];
   info(): ServerInfo;
   providerStatus(): Record<ProviderKind, ProviderStatus[]>;
   voices(): VoiceInfo[];
@@ -303,15 +325,20 @@ export async function createServices(
   };
 
   const providers = buildProviders(keys, env, config.mock);
-  const stt = new FallbackChain('stt', applyOrder(providers.stt, config.providerOrder.stt), {
-    onStatusChange: notify,
-  });
-  const mt = new FallbackChain('mt', applyOrder(providers.mt, config.providerOrder.mt), {
-    onStatusChange: notify,
-  });
-  const tts = new FallbackChain('tts', applyOrder(providers.tts, config.providerOrder.tts), {
-    onStatusChange: notify,
-  });
+  const warnings: string[] = [];
+  const chain = <P extends ProviderBase>(kind: ProviderKind, all: P[], variable: string) => {
+    // The mock providers stand in for everything; a production provider list does not apply to them.
+    const selection = selectProviders(all, config.mock ? undefined : config.providerOrder[kind]);
+    if (selection.unknown.length > 0) {
+      warnings.push(
+        `${variable} names unknown provider(s) ${selection.unknown.join(', ')}. Known ids: ${all.map((p) => p.id).join(', ')}.`,
+      );
+    }
+    return new FallbackChain(kind, selection.providers, { onStatusChange: notify });
+  };
+  const stt = chain('stt', providers.stt, 'STT_PROVIDERS');
+  const mt = chain('mt', providers.mt, 'MT_PROVIDERS');
+  const tts = chain('tts', providers.tts, 'TTS_PROVIDERS');
 
   // An explicit STT_PROVIDERS order is taken literally; otherwise prefer per language.
   const explicitSttOrder = Boolean(config.providerOrder.stt?.length);
@@ -342,6 +369,7 @@ export async function createServices(
     config,
     keys,
     chains: { stt, mt, tts, sttRank },
+    warnings,
     providerStatus,
     voices,
     info: () => ({

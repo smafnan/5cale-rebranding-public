@@ -148,8 +148,10 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
         : 1;
 
     const abort = new AbortController();
-    request.raw.on('close', () => {
-      if (!reply.sent) abort.abort();
+    // The response stream closing before it finished means the browser went away.
+    // (The request stream's own 'close' fires as soon as the body has been read.)
+    reply.raw.on('close', () => {
+      if (!reply.raw.writableFinished) abort.abort();
     });
     try {
       const run = await services.chains.tts.run(

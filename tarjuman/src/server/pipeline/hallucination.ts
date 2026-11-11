@@ -1,7 +1,7 @@
 import type { LangCode } from '../../shared/languages';
 import type { DropReason } from '../../shared/protocol';
 import { arabicScriptRatio } from '../providers/mt/prompt';
-import { WHISPER_PROMPT_LEAD } from '../providers/stt/groqWhisper';
+import { buildWhisperPrompt, WHISPER_PROMPT_LEAD } from '../providers/stt/groqWhisper';
 import type { SttResult } from '../providers/types';
 
 /**
@@ -125,9 +125,6 @@ const MAX_CHARS_PER_SECOND = 40;
 /** Short clips make the rate meaningless; below this length the check is skipped. */
 const RATE_CHECK_MIN_CHARS = 40;
 
-/** Clips shorter than this give Whisper too little to work with to trust a stock phrase. */
-const WEAK_PHRASE_MIN_AUDIO_MS = 1_500;
-
 /** True when the text is mostly one short unit repeated (a decoding loop). */
 export function isRepetitionLoop(normalized: string): boolean {
   const words = normalized.split(' ').filter(Boolean);
@@ -158,6 +155,8 @@ export interface TranscriptEvidence {
   lang: LangCode;
   /** Duration of the audio the transcript came from. */
   audioMs: number;
+  /** The vocabulary hints that were sent along with the audio. */
+  hints?: readonly string[];
   signals: Pick<SttResult, 'noSpeechProb' | 'avgLogProb' | 'compressionRatio'>;
 }
 
@@ -194,10 +193,13 @@ export function judgeTranscript(text: string, evidence: TranscriptEvidence): Tra
       return { keep: false, reason: 'hallucination', detail: 'known recognition artefact' };
   }
 
-  // Whisper sometimes echoes the prompt it was given instead of transcribing.
+  // Whisper sometimes echoes the prompt it was given (or the beginning of it) instead of transcribing.
   const promptLead = normalizeForMatch(WHISPER_PROMPT_LEAD[evidence.lang]);
-  if (normalized === promptLead) {
-    return { keep: false, reason: 'hallucination', detail: 'recognizer echoed its prompt' };
+  if (normalized.startsWith(promptLead)) {
+    const fullPrompt = normalizeForMatch(buildWhisperPrompt(evidence.lang, evidence.hints ?? []));
+    if (fullPrompt.startsWith(normalized)) {
+      return { keep: false, reason: 'hallucination', detail: 'recognizer echoed its prompt' };
+    }
   }
 
   // Urdu audio transcribed in Devanagari, or German audio in Arabic script, means the recognizer
@@ -210,11 +212,12 @@ export function judgeTranscript(text: string, evidence: TranscriptEvidence): Tra
   }
 
   if (WEAK_PHRASES[evidence.lang].has(normalized)) {
-    const weakAudio = evidence.audioMs < WEAK_PHRASE_MIN_AUDIO_MS;
+    // A clear, deliberate "Vielen Dank." has strong confidence; the noise artefact does not.
+    // Recognizers that report no confidence (multimodal models) make their own "no speech"
+    // decision, so their short answers are trusted: a one-word reply is a normal thing to say.
     const weakConfidence =
       (noSpeechProb !== undefined && noSpeechProb > 0.3) || (avgLogProb !== undefined && avgLogProb < -0.7);
-    // A clear, deliberate "Vielen Dank." has strong confidence; the noise artefact does not.
-    if (weakConfidence || (weakAudio && avgLogProb === undefined)) {
+    if (weakConfidence) {
       return { keep: false, reason: 'hallucination', detail: 'stock phrase on weak audio' };
     }
   }

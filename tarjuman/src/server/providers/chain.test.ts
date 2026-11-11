@@ -655,6 +655,28 @@ describe('FallbackChain: hedging', () => {
     expect(chain.status()[1]?.detail).toBeUndefined();
   });
 
+  it('starts the next provider at once when a hedged request fails while the first one is still slow', async () => {
+    vi.useFakeTimers();
+    const chain = new FallbackChain('mt', three());
+    const op = controllable();
+
+    const pending = chain.run(op.operation, opts({ hedgeAfterMs: 100 }));
+    await vi.advanceTimersByTimeAsync(100);
+    expect(op.ids()).toEqual(['a', 'b']);
+
+    // The hedge fails fast (rate limited); the first provider has still not answered.
+    op.call('b').result.reject(new ProviderError('b', 'rate_limit', 'b says 429'));
+    await vi.advanceTimersByTimeAsync(1);
+    expect(op.ids()).toEqual(['a', 'b', 'c']);
+
+    op.call('c').result.resolve('from c');
+    const result = await pending;
+    expect(result.provider.id).toBe('c');
+    // The slow provider was cancelled, not blamed.
+    expect(op.call('a').signal.aborted).toBe(true);
+    expect(chain.status()[0]).toMatchObject({ state: 'ready' });
+  });
+
   it('does not launch a third provider when the first fails while the hedge is running', async () => {
     vi.useFakeTimers();
     const chain = new FallbackChain('mt', three());

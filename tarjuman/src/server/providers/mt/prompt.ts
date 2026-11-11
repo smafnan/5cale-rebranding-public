@@ -196,15 +196,28 @@ export function arabicScriptRatio(text: string): number {
   return (text.match(ARABIC_SCRIPT)?.length ?? 0) / letters;
 }
 
-/** Does `text` plausibly look like `lang`? Catches wrong-script and wrong-language answers. */
+/**
+ * Does `text` plausibly look like a TRANSLATION into `lang`? Catches wrong-script and
+ * wrong-language answers. Urdu with English terms mixed in is normal, so the bar for Urdu is
+ * "a real share of Arabic-script letters", not "mostly".
+ */
 export function looksLikeLanguage(text: string, lang: LangCode): boolean {
   if (!/\p{L}/u.test(text)) return true; // numbers / symbols only: nothing to judge
   const ratio = arabicScriptRatio(text);
-  if (LANGUAGES[lang].script === 'Arab') {
-    // Urdu with a few English terms mixed in is fine; Devanagari or mostly-Latin text is not.
-    return !DEVANAGARI.test(text) && ratio >= 0.5;
-  }
+  if (LANGUAGES[lang].script === 'Arab') return !DEVANAGARI.test(text) && ratio >= 0.3;
   return ratio <= 0.2;
+}
+
+/**
+ * Is `text` acceptable as a TRANSCRIPT of speech in `lang`? Much more lenient than for a
+ * translation: people switch languages mid-sentence, and an Urdu speaker may say a whole
+ * sentence in English. Only output that cannot be right is rejected: Urdu in Devanagari
+ * (the recognizer slipped into Hindi), or a Latin-script language written in Arabic script.
+ */
+export function plausibleTranscript(text: string, lang: LangCode): boolean {
+  if (!/\p{L}/u.test(text)) return true;
+  if (LANGUAGES[lang].script === 'Arab') return !DEVANAGARI.test(text);
+  return arabicScriptRatio(text) <= 0.5;
 }
 
 /**
@@ -241,7 +254,7 @@ export function parseInterpreterAnswer(
   if (options.withTranscript && !transcript) {
     throw new ProviderError(providerId, 'bad_response', 'model returned translations without a transcript');
   }
-  if (transcript && !looksLikeLanguage(transcript, job.sourceLang)) {
+  if (transcript && !plausibleTranscript(transcript, job.sourceLang)) {
     throw new ProviderError(
       providerId,
       'bad_response',

@@ -56,6 +56,7 @@ async function main(): Promise<void> {
   app.log.info(`translation:        ${ready('mt')}`);
   app.log.info(`voice:              ${ready('tts')}`);
   if (config.mock) app.log.warn('TARJUMAN_MOCK is on: all providers are offline fakes.');
+  for (const warning of services.warnings) app.log.warn(warning);
   if ((process.env.HTTPS_PROXY || process.env.https_proxy) && !process.env.NODE_USE_ENV_PROXY) {
     app.log.warn(
       'HTTPS_PROXY is set, but Node only uses it for provider requests when NODE_USE_ENV_PROXY=1 is also set.',

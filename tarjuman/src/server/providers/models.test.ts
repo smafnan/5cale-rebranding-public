@@ -103,6 +103,30 @@ describe('Gemini', () => {
     expect(calls).toHaveLength(4);
   });
 
+  it('advances once, not once per request, when several requests fail at the same time', async () => {
+    const negotiator = new GeminiNegotiator(['retired', 'good', 'older'], 'full');
+    const attempt = () =>
+      negotiator.run(async (model) => {
+        await Promise.resolve();
+        if (model === 'retired')
+          throw new ProviderError('p', 'bad_request', 'model not found', { status: 404 });
+        return model;
+      });
+    expect(await Promise.all([attempt(), attempt(), attempt()])).toEqual(['good', 'good', 'good']);
+    expect(negotiator.model).toBe('good');
+  });
+
+  it('keeps a request shape that has worked, even if a later request is rejected', async () => {
+    const negotiator = new GeminiNegotiator(['m'], 'full');
+    expect(await negotiator.run(async () => 'ok')).toBe('ok');
+    await failure(
+      negotiator.run(async () => {
+        throw new ProviderError('p', 'bad_request', 'this one request was malformed', { status: 400 });
+      }),
+    );
+    expect(negotiator.shape).toBe('full');
+  });
+
   it('does not walk the ladder for errors that another shape cannot fix', async () => {
     const negotiator = new GeminiNegotiator(['a', 'b'], 'full');
     let calls = 0;
@@ -456,6 +480,28 @@ describe('MyMemory', () => {
     expect(calls.map((c) => new URL(c.url).searchParams.get('langpair')).sort()).toEqual(['de|en', 'de|ur']);
     expect(new URL(must(calls[0]).url).searchParams.get('de')).toBe('team@example.org');
     expect(must(calls[0]).init.method).toBe('GET');
+  });
+
+  it('does not mistake a translation that mentions a limit for a used-up quota, and tidies the text', async () => {
+    const { fetch } = fakeFetch((call) => {
+      const pair = new URL(call.url).searchParams.get('langpair');
+      return jsonResponse({
+        responseStatus: 200,
+        quotaFinished: false,
+        responseData: {
+          translatedText:
+            pair === 'ur|de' ? '"Das Tempolimit liegt bei 50.' : 'The speed limit isn&#39;t 50. ',
+        },
+      });
+    });
+    const provider = new MyMemoryProvider({ getEmail: () => undefined, fetchImpl: fetch });
+    const result = await provider.translate(
+      mtRequest({ sourceLang: 'ur', targetLangs: ['de', 'en'], text: 'رفتار کی حد 50 ہے۔' }),
+    );
+    expect(result.translations).toEqual({
+      de: 'Das Tempolimit liegt bei 50.',
+      en: "The speed limit isn't 50.",
+    });
   });
 
   it('recognises a used-up quota, a wrong-script answer and over-long text', async () => {

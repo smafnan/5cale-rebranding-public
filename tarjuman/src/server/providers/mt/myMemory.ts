@@ -23,6 +23,24 @@ interface MyMemoryResponse {
   quotaFinished?: boolean;
 }
 
+/** MyMemory puts this text where the translation should be when the daily allowance is used up. */
+const QUOTA_BANNER = /^MYMEMORY WARNING|YOU USED ALL AVAILABLE FREE TRANSLATIONS/;
+
+const ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+};
+
+/** The service sometimes returns HTML entities and stray wrapping quotes. */
+function tidy(text: string): string {
+  return text
+    .replace(/&(amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity] ?? entity)
+    .replace(/^["'“”„«»\s]+|["'“”„«»\s]+$/gu, '');
+}
+
 export interface MyMemoryOptions {
   /** Optional contact e-mail, which raises the daily quota. */
   getEmail: () => string | undefined;
@@ -66,10 +84,11 @@ export class MyMemoryProvider implements MtProvider {
     });
     const json = await readJson<MyMemoryResponse>(this.id, response);
     const status = Number(json.responseStatus);
-    const translated = json.responseData?.translatedText?.trim() ?? '';
+    const translated = tidy(json.responseData?.translatedText ?? '');
 
     // MyMemory reports quota problems with HTTP 200 and a status / message in the body.
-    if (json.quotaFinished || status === 429 || /QUOTA|LIMIT/i.test(translated.slice(0, 60))) {
+    // Only the service's own banner counts; a translation may well contain the word "limit".
+    if (json.quotaFinished === true || status === 429 || QUOTA_BANNER.test(translated)) {
       throw new ProviderError(this.id, 'rate_limit', 'MyMemory daily quota is used up', {
         retryAfterMs: 600_000,
       });

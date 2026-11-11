@@ -203,7 +203,8 @@ export class FallbackChain<P extends ProviderBase> {
 
     return new Promise<RunResult<T, P>>((resolve, reject) => {
       const attempts: Attempt[] = [];
-      const controllers = new Set<AbortController>();
+      /** Requests in flight, with the time each was started. */
+      const controllers = new Map<AbortController, number>();
       const timers = new Set<ReturnType<typeof setTimeout>>();
       let settled = false;
       let nextIndex = 0;
@@ -213,7 +214,7 @@ export class FallbackChain<P extends ProviderBase> {
         if (settled) return;
         settled = true;
         for (const timer of timers) clearTimeout(timer);
-        for (const controller of controllers) controller.abort();
+        for (const controller of controllers.keys()) controller.abort();
         options.signal.removeEventListener('abort', onAbort);
         complete();
       };
@@ -235,7 +236,7 @@ export class FallbackChain<P extends ProviderBase> {
         }
 
         const own = new AbortController();
-        controllers.add(own);
+        controllers.set(own, startedAt);
         const timeout = AbortSignal.timeout(provider.timeoutMs);
         const signal = AbortSignal.any([own.signal, timeout]);
         active += 1;
@@ -280,9 +281,27 @@ export class FallbackChain<P extends ProviderBase> {
                 message: providerError.message,
               });
               this.recordFailure(health, providerError);
-              // If a hedged request is still running, let it finish; otherwise move on.
-              if (active === 0 && !launch()) {
-                settle(() => reject(new ChainExhaustedError(this.kind, attempts)));
+              if (active === 0) {
+                // Nothing else is running: move on at once, or give up.
+                if (!launch()) settle(() => reject(new ChainExhaustedError(this.kind, attempts)));
+                return;
+              }
+              // Another request is still in flight. If it has already been running for longer
+              // than the hedge delay it has proven slow, so start the next provider now;
+              // otherwise give it the rest of its grace period. Waiting for a slow provider to
+              // time out before trying a healthy one would stall the call.
+              if (options.hedgeAfterMs !== undefined && timers.size === 0 && nextIndex < order.length) {
+                const oldest = Math.min(...controllers.values());
+                const wait = options.hedgeAfterMs - (this.now() - oldest);
+                if (wait <= 0) {
+                  launch();
+                } else {
+                  const timer = setTimeout(() => {
+                    timers.delete(timer);
+                    launch();
+                  }, wait);
+                  timers.add(timer);
+                }
               }
             },
           );

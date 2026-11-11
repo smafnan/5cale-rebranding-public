@@ -155,24 +155,42 @@ export class GeminiNegotiator {
     return SHAPE_LADDER[this.shapeIndex] ?? 'bare';
   }
 
+  /** A request shape that has worked once is kept: later 400s are about the request, not the shape. */
+  private shapeProven = false;
+
   /**
    * Run `call` with the current model and shape; on 404 move to the next model, on 400 to the
    * next shape, and retry. Progress is kept for later calls. Other errors propagate untouched.
+   *
+   * Several requests can be in flight at once (both channels speaking). Each failure therefore
+   * only advances an index if that index is still the one the failed call used; otherwise
+   * another request already advanced it, and this one simply retries with the new value.
    */
   async run<T>(call: (model: string, shape: GeminiShape) => Promise<T>): Promise<T> {
-    // Bounded: each iteration either returns, throws, or permanently advances one index.
+    // Bounded: each iteration returns, throws, or observes an index further along than before.
     for (;;) {
+      const usedModel = this.modelIndex;
+      const usedShape = this.shapeIndex;
       try {
-        return await call(this.model, this.shape);
+        const value = await call(this.model, this.shape);
+        if (usedShape === this.shapeIndex) this.shapeProven = true;
+        return value;
       } catch (error) {
         if (!(error instanceof ProviderError) || error.kind !== 'bad_request') throw error;
-        if (error.status === 404 && this.modelIndex < this.models.length - 1) {
-          this.modelIndex += 1;
-          continue;
-        }
-        if (error.status === 400 && this.shapeIndex < SHAPE_LADDER.length - 1) {
-          this.shapeIndex += 1;
-          continue;
+        if (error.status === 404) {
+          if (usedModel !== this.modelIndex) continue;
+          if (this.modelIndex < this.models.length - 1) {
+            this.modelIndex += 1;
+            // A different model may want a different request shape.
+            this.shapeProven = false;
+            continue;
+          }
+        } else if (error.status === 400) {
+          if (usedShape !== this.shapeIndex) continue;
+          if (!this.shapeProven && this.shapeIndex < SHAPE_LADDER.length - 1) {
+            this.shapeIndex += 1;
+            continue;
+          }
         }
         throw error;
       }

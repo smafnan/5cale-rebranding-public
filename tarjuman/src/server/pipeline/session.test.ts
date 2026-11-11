@@ -217,6 +217,19 @@ describe('InterpreterSession', () => {
     expect(h.of('utterance.transcript')[0]).toMatchObject({ text: 'یہ ایک ٹیسٹ ہے', provider: 'keyboard' });
   });
 
+  it('takes typed text as written, brackets and all', async () => {
+    const h = harness();
+    h.session.submitText(
+      't1',
+      'incoming',
+      'Bitte senden Sie die Rechnung (Nr. 4711) bis Freitag [dringend] an *Herrn Khan*.',
+    );
+    await h.session.idle();
+    expect(h.mtRequests[0]?.text).toBe(
+      'Bitte senden Sie die Rechnung (Nr. 4711) bis Freitag [dringend] an *Herrn Khan*.',
+    );
+  });
+
   it('drops audio that cannot contain speech before spending any quota', async () => {
     const h = harness();
     h.audio('short', 'outgoing', {}, 0.1);

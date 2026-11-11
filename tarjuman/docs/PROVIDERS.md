@@ -74,16 +74,23 @@ Gemini providers also carry built-in fallback ids and move to the next one autom
 when Google answers "model not found". For Groq, each listed model becomes its own
 provider (id `groq-<model name>`), so a retired model only disables that one entry.
 
-## Changing the order
+## Choosing which providers are used
 
 ```bash
-STT_PROVIDERS=groq-whisper-large-v3,groq-whisper-large-v3-turbo   # e.g. keep audio away from Google
+STT_PROVIDERS=groq-whisper-large-v3,groq-whisper-large-v3-turbo   # e.g. never send audio to Google
 MT_PROVIDERS=groq-gpt-oss-120b,gemini-flash-lite
 TTS_PROVIDERS=azure,edge
 ```
 
-Listed ids are tried in that order; the rest follow in their default order. Setting
-`STT_PROVIDERS` also switches off the per-language preference.
+A list is **exclusive**: only the listed providers are used, in that order. Anything not
+listed is never contacted, which is what makes "keep audio away from provider X" or
+"translate locally only" a guarantee. Unknown ids are reported when the server starts.
+Without a list, all providers are used in their default order. Setting `STT_PROVIDERS` also
+switches off the per-language preference.
+
+Note that the keyless MyMemory translator is part of the default chain: when every other
+translator fails or is slow, the sentence is sent to it. Leave it out of `MT_PROVIDERS` if
+that is not acceptable.
 
 ## A fully local translator
 
@@ -95,8 +102,8 @@ OPENAI_COMPAT_MODEL=gemma3:12b
 MT_PROVIDERS=custom
 ```
 
-No key, no quota, nothing leaves the machine for the translation step. Quality and speed
-depend on the model and your hardware.
+No key, no quota, and because the list is exclusive nothing leaves the machine for the
+translation step. Quality and speed depend on the model and your hardware.
 
 ## Paying for it later
 

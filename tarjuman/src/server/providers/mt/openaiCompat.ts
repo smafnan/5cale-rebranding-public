@@ -85,6 +85,8 @@ export class OpenAiCompatMtProvider implements MtProvider {
   readonly requestsPerMinute: number | undefined;
   readonly timeoutMs: number;
   private shapeIndex = 0;
+  /** A shape that has worked once is kept: later 400s are about the request, not the shape. */
+  private shapeProven = false;
 
   constructor(private readonly options: OpenAiCompatOptions) {
     this.id = options.id;
@@ -117,7 +119,8 @@ export class OpenAiCompatMtProvider implements MtProvider {
 
     // Bounded: each iteration returns, throws, or permanently moves one step down the ladder.
     for (;;) {
-      const shape = SHAPE_LADDER[this.shapeIndex] ?? 'plain';
+      const usedShape = this.shapeIndex;
+      const shape = SHAPE_LADDER[usedShape] ?? 'plain';
       try {
         const response = await httpRequest({
           providerId: this.id,
@@ -140,14 +143,17 @@ export class OpenAiCompatMtProvider implements MtProvider {
           withTranscript: false,
           sourceText: request.text,
         });
+        if (usedShape === this.shapeIndex) this.shapeProven = true;
         return { translations: answer.translations, skipped: answer.skip };
       } catch (error) {
         const rejectedShape =
           error instanceof ProviderError &&
           error.kind === 'bad_request' &&
-          (error.status === 400 || error.status === 422) &&
-          this.shapeIndex < SHAPE_LADDER.length - 1;
+          (error.status === 400 || error.status === 422);
         if (!rejectedShape) throw error;
+        // Another request in flight already stepped down: retry with the shape it moved to.
+        if (usedShape !== this.shapeIndex) continue;
+        if (this.shapeProven || this.shapeIndex >= SHAPE_LADDER.length - 1) throw error;
         this.shapeIndex += 1;
       }
     }

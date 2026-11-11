@@ -237,7 +237,7 @@ export class InterpreterSession {
       utterance.timings.sttMs = ms;
 
       const text = normalizeTranscript(run.value.text).slice(0, LIMITS.maxTextChars);
-      const verdict = judgeTranscript(text, { lang: language, audioMs, signals: run.value });
+      const verdict = judgeTranscript(text, { lang: language, audioMs, signals: run.value, hints });
       if (!verdict.keep) {
         this.finish(utterance);
         this.emitDropped(id, channel, verdict.reason, verdict.detail);
@@ -263,7 +263,9 @@ export class InterpreterSession {
     if (this.closed) return;
     if (!this.admit(id, channel, 'mt')) return;
 
-    const text = normalizeTranscript(rawText);
+    // Typed text is taken as written. (The transcript clean-up removes bracketed annotations,
+    // which is right for recognizer output and wrong for what a person typed.)
+    const text = rawText.replace(/\s+/g, ' ').trim();
     if (!text) return this.emitDropped(id, channel, 'no_speech', 'empty text');
     if (text.length > LIMITS.maxTextChars) {
       this.emitError(

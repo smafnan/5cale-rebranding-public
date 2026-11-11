@@ -148,6 +148,14 @@ describe('judgeTranscript', () => {
     expect(kept('हम अगले हफ्ते मिलेंगे', 'ur')).toBe(false);
     expect(kept('ہم اگلے ہفتے ملیں گے', 'de')).toBe(false);
     expect(kept('Dies ist ein Gespräch in einem geschäftlichen Meeting.', 'de')).toBe(false);
+    // The echo may include the glossary that was appended to the prompt, or stop part-way.
+    const withHints = (text: string) =>
+      judgeTranscript(text, { lang: 'de', audioMs: 6_000, signals: {}, hints: ['Khan', 'SAP'] }).keep;
+    expect(withHints('Dies ist ein Gespräch in einem geschäftlichen Meeting. Khan, SAP.')).toBe(false);
+    expect(withHints('Dies ist ein Gespräch in einem geschäftlichen Meeting. Khan')).toBe(false);
+    expect(withHints('Dies ist ein Gespräch in einem geschäftlichen Meeting über SAP mit Herrn Khan.')).toBe(
+      true,
+    );
     expect(kept('2026', 'de')).toBe(true);
   });
 
@@ -155,9 +163,11 @@ describe('judgeTranscript', () => {
     expect(kept('Vielen Dank.', 'de', { noSpeechProb: 0.05, avgLogProb: -0.2 })).toBe(true);
     expect(kept('Vielen Dank.', 'de', { noSpeechProb: 0.45, avgLogProb: -0.3 })).toBe(false);
     expect(kept('Vielen Dank.', 'de', { noSpeechProb: 0.05, avgLogProb: -0.9 })).toBe(false);
-    // Without confidence signals (multimodal recognizer) only very short clips are doubted.
-    expect(kept('شکریہ', 'ur', {}, 900)).toBe(false);
-    expect(kept('شکریہ', 'ur', {}, 2_000)).toBe(true);
+    // A recognizer without confidence signals makes its own no-speech decision, so its
+    // one-word answers are believed: "yes", "okay" and "thank you" are normal replies.
+    for (const reply of ['شکریہ', 'جی', 'ٹھیک ہے۔', 'ہاں'])
+      expect(kept(reply, 'ur', {}, 900), reply).toBe(true);
+    expect(kept('Ja.', 'de', {}, 800)).toBe(true);
   });
 
   it('drops more text than the audio could hold', () => {

@@ -9,6 +9,7 @@ import {
   buildUserPrompt,
   looksLikeLanguage,
   parseInterpreterAnswer,
+  plausibleTranscript,
 } from './prompt';
 
 const URDU = 'ہم اگلے ہفتے نیا ورژن جاری کریں گے۔';
@@ -172,9 +173,35 @@ describe('parseInterpreterAnswer', () => {
   });
 });
 
+describe('plausibleTranscript', () => {
+  it('accepts code-switched speech, which is what the prompt asks the model to write down', () => {
+    expect(plausibleTranscript('Next week Monday کو deployment ہے', 'ur')).toBe(true);
+    expect(plausibleTranscript('Yes, the deployment is done.', 'ur')).toBe(true);
+    expect(plausibleTranscript('Wir machen das morgen, inshallah (ان شاء اللہ).', 'de')).toBe(true);
+  });
+
+  it('rejects output that cannot be a transcript of that language', () => {
+    expect(plausibleTranscript('हम अगले हफ्ते मिलेंगे', 'ur')).toBe(false);
+    expect(plausibleTranscript('ہم اگلے ہفتے ملیں گے', 'de')).toBe(false);
+  });
+
+  it('lets a mostly-English Urdu utterance through the audio answer parser', () => {
+    const raw = JSON.stringify({
+      skip: false,
+      transcript: 'Next week Monday کو deployment ہے',
+      en: 'The deployment is next Monday.',
+      de: 'Das Deployment ist nächsten Montag.',
+    });
+    expect(
+      parseInterpreterAnswer('test', raw, translationJob(), { withTranscript: true }).transcript,
+    ).toContain('deployment');
+  });
+});
+
 describe('looksLikeLanguage', () => {
   it('accepts Urdu with English terms mixed in, and numbers on their own', () => {
     expect(looksLikeLanguage('ہم نے payment module کا کام مکمل کر لیا ہے', 'ur')).toBe(true);
+    expect(looksLikeLanguage('API کی deployment کل production پر ہوگی', 'ur')).toBe(true);
     expect(looksLikeLanguage('2026', 'ur')).toBe(true);
     expect(looksLikeLanguage('2026', 'de')).toBe(true);
   });
