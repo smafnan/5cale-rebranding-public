@@ -11,6 +11,12 @@ import { deviceOptions } from '../lib/devices';
 import { formatPercent, formatRate, formatSeconds } from '../lib/format';
 import { SelectField, Segmented, Slider, Spinner, Switch } from './controls';
 
+/**
+ * More queued speech than one ordinary sentence means the interpreter has fallen behind;
+ * only then is the queue (and the way to skip it) worth showing.
+ */
+const BACKLOG_NOTICE_MS = 6_000;
+
 /** Subscribed to the level alone, so ten updates a second repaint only this bar. */
 function LevelMeter({ channel }: { channel: ChannelId }) {
   const level = useAppStore((state) => state.channels[channel].level);
@@ -75,7 +81,7 @@ function Activity({ channel }: { channel: ChannelId }) {
           <Volume2 size={14} aria-hidden="true" /> Speaking the translation
         </span>
       ) : null}
-      {queueMs > 1500 ? (
+      {queueMs > BACKLOG_NOTICE_MS ? (
         <span className="activity__item">
           {formatSeconds(queueMs)} of speech queued
           <button
