@@ -129,6 +129,28 @@ describe('Gemini', () => {
     expect(error.retryAfterMs).toBe(23_000);
   });
 
+  it('treats Google\'s HTTP 400 for an invalid key as an authentication failure, not a bad request', async () => {
+    // Body as returned by the live API for a wrong key.
+    const { fetch, calls } = fakeFetch(() =>
+      jsonResponse(
+        {
+          error: {
+            code: 400,
+            message: 'API key not valid. Please pass a valid API key.',
+            status: 'INVALID_ARGUMENT',
+            details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }],
+          },
+        },
+        { status: 400 },
+      ),
+    );
+    const provider = new GeminiMtProvider({ getKey: () => 'wrong', models: ['a', 'b'], fetchImpl: fetch });
+    const error = await failure(provider.translate(mtRequest()));
+    expect(error.kind).toBe('auth');
+    // One request only: no walking down the request shapes because of a wrong key.
+    expect(calls).toHaveLength(1);
+  });
+
   it('is unconfigured without a key', async () => {
     const provider = new GemmaMtProvider({ getKey: () => undefined, models: ['m'] });
     expect(provider.isConfigured()).toBe(false);

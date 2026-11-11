@@ -1,0 +1,20 @@
+services:
+  tarjuman:
+    build: .
+    restart: unless-stopped
+    # Published on this machine only. Put a TLS-terminating reverse proxy in front before
+    # exposing it further: browsers allow the microphone only on https:// or localhost.
+    ports:
+      - '127.0.0.1:8787:8787'
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /data
+      # Required: open the app as http://localhost:8787/?token=<this value>
+      ACCESS_TOKEN: ${ACCESS_TOKEN:?Set ACCESS_TOKEN (at least 8 characters) in .env}
+    volumes:
+      - tarjuman-data:/data
+
+volumes:
+  tarjuman-data:

@@ -18,6 +18,8 @@ export interface HttpRequestOptions {
 
 const BODY_SNIPPET_CHARS = 300;
 
+const INVALID_KEY_PATTERN = /API_KEY_INVALID|API key not valid|API key expired|invalid api key/i;
+
 function classifyStatus(status: number): ProviderErrorKind {
   if (status === 401 || status === 403) return 'auth';
   if (status === 429) return 'rate_limit';
@@ -101,7 +103,10 @@ export async function httpRequest(options: HttpRequestOptions): Promise<Response
   if (response.ok) return response;
 
   const body = await response.text().catch(() => '');
-  const kind = classifyStatus(response.status);
+  let kind = classifyStatus(response.status);
+  // Google answers an invalid key with HTTP 400 (reason API_KEY_INVALID), not 401. It must
+  // not be mistaken for a malformed request, which callers react to by changing the request.
+  if (kind === 'bad_request' && INVALID_KEY_PATTERN.test(body)) kind = 'auth';
   const detail = extractErrorMessage(body).slice(0, BODY_SNIPPET_CHARS);
   throw new ProviderError(providerId, kind, `HTTP ${response.status}${detail ? ` — ${detail}` : ''}`, {
     status: response.status,
