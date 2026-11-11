@@ -2,6 +2,7 @@ import { SendHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
 import { LANGUAGES } from '../../../../shared/languages';
+import { LIMITS } from '../../../../shared/protocol';
 import type { ChannelId } from '../../../../shared/settings';
 import { useAppStore } from '../../state/store';
 import { controller } from '../controller';
@@ -42,6 +43,7 @@ export function Composer() {
         className="textarea"
         rows={1}
         dir="auto"
+        maxLength={LIMITS.maxTextChars}
         value={text}
         disabled={!connected}
         aria-label={`Type in ${LANGUAGES[sourceLang].name}`}

@@ -5,8 +5,25 @@
  * so it is only a fallback for when the server cannot synthesize speech at all.
  */
 
+let voices: SpeechSynthesisVoice[] = [];
+let primed = false;
+
+/**
+ * Browsers load their voice list asynchronously: the first getVoices() call usually returns
+ * nothing. Call this once at start-up so the list is there when it is needed.
+ */
+export function primeBrowserVoices(): void {
+  const synth = globalThis.speechSynthesis;
+  if (!synth || primed) return;
+  primed = true;
+  const refresh = () => {
+    voices = synth.getVoices();
+  };
+  refresh();
+  synth.addEventListener?.('voiceschanged', refresh);
+}
+
 function findVoice(locale: string): SpeechSynthesisVoice | undefined {
-  const voices = globalThis.speechSynthesis?.getVoices() ?? [];
   const language = locale.split('-')[0]?.toLowerCase() ?? '';
   const sameLocale = voices.find((voice) => voice.lang.toLowerCase() === locale.toLowerCase());
   return (
@@ -17,23 +34,35 @@ function findVoice(locale: string): SpeechSynthesisVoice | undefined {
   );
 }
 
-/** True when the browser has a voice for this locale's language. */
-export function browserCanSpeak(locale: string): boolean {
-  return findVoice(locale) !== undefined;
-}
-
 /**
  * Speak `text` with a built-in voice.
- * @returns false when the browser has no voice for the language (nothing is spoken).
+ *
+ * `onSpeaking` is told when audible speech starts and stops, so the caller can keep the
+ * microphone from picking it up.
+ *
+ * @returns false when the browser has voices but none for this language (nothing is spoken).
  */
-export function speakWithBrowser(text: string, locale: string, rate: number): boolean {
+export function speakWithBrowser(
+  text: string,
+  locale: string,
+  rate: number,
+  onSpeaking: (speaking: boolean) => void,
+): boolean {
   const synth = globalThis.speechSynthesis;
+  if (!synth) return false;
+  primeBrowserVoices();
   const voice = findVoice(locale);
-  if (!synth || !voice) return false;
+  // With a loaded list and no match, the default voice would read the text as gibberish.
+  if (!voice && voices.length > 0) return false;
+
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.voice = voice;
-  utterance.lang = voice.lang;
+  if (voice) utterance.voice = voice;
+  // Without a voice object (list not loaded yet) the browser picks one by language.
+  utterance.lang = voice?.lang ?? locale;
   utterance.rate = Math.min(2, Math.max(0.5, rate));
+  utterance.onstart = () => onSpeaking(true);
+  utterance.onend = () => onSpeaking(false);
+  utterance.onerror = () => onSpeaking(false);
   synth.speak(utterance);
   return true;
 }

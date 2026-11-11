@@ -18,6 +18,11 @@ export interface OutputCallbacks {
   onState(state: OutputState): void;
   /** First audio of an utterance is about to be heard. `atEpochMs` is when playback starts. */
   onUtteranceStart?(utteranceId: string, atEpochMs: number): void;
+  /**
+   * The audio device stopped rendering (unplugged headset, driver error). Queued speech was
+   * discarded; the owner should choose a device again.
+   */
+  onInterrupted?(): void;
 }
 
 export interface SpeechItem {
@@ -54,6 +59,9 @@ export class OutputBus {
   /** Bumped by flush(); audio decoded for an older generation is discarded. */
   private generation = 0;
   private decodeChain: Promise<void> = Promise.resolve();
+  /** Resolves once the configured output device has been applied to a freshly built graph. */
+  private sinkReady: Promise<unknown> = Promise.resolve();
+  private closing = false;
   private ticker: ReturnType<typeof setInterval> | null = null;
   private lastPlaying = false;
 
@@ -66,7 +74,9 @@ export class OutputBus {
   constructor(private readonly callbacks: OutputCallbacks) {}
 
   get playing(): boolean {
-    return this.context !== null && this.queueEnd > this.context.currentTime + 0.01;
+    const context = this.context;
+    // A context that is not running plays nothing, whatever is scheduled on it.
+    return context !== null && context.state === 'running' && this.queueEnd > context.currentTime + 0.01;
   }
 
   get queueMs(): number {
@@ -83,6 +93,7 @@ export class OutputBus {
     const context = this.context;
     if (context && context.state === 'suspended') await context.resume().catch(() => undefined);
     if (this.element?.paused) await this.element.play().catch(() => undefined);
+    await this.sinkReady;
   }
 
   private build(): void {
@@ -112,8 +123,27 @@ export class OutputBus {
     this.speechGain = speechGain;
     this.passthroughGain = passthroughGain;
     this.duckGain = duckGain;
-    if (this.sinkId) void this.applySink();
+    // Nothing is scheduled before the device has been applied (see enqueue), so speech never
+    // starts on the wrong device.
+    this.sinkReady = this.sinkId ? this.applySink() : Promise.resolve();
     if (this.passthroughStream) this.connectPassthrough();
+
+    // A context stops rendering when its device disappears. Scheduled audio would then never
+    // finish and the bus would look busy forever, so drop the queue and tell the owner.
+    let wasRunning = context.state === 'running';
+    const onChange = () => {
+      if (this.closing || this.context !== context) return;
+      const running = context.state === 'running';
+      if (wasRunning && !running) {
+        this.flush();
+        this.callbacks.onInterrupted?.();
+      } else {
+        this.report();
+      }
+      wasRunning = running;
+    };
+    context.addEventListener('statechange', onChange);
+    context.addEventListener('error', onChange);
   }
 
   private async applySink(): Promise<boolean> {
@@ -150,6 +180,9 @@ export class OutputBus {
 
   /** Mix a live stream (the original voice) underneath the translated speech, or remove it with null. */
   setPassthrough(stream: MediaStream | null): void {
+    // Called on every settings change; rebuilding the node for an unchanged stream would
+    // interrupt the live audio each time.
+    if (stream === this.passthroughStream && (stream === null || this.passthroughSource !== null)) return;
     this.passthroughStream = stream;
     if (this.context) this.connectPassthrough();
   }
@@ -188,6 +221,7 @@ export class OutputBus {
     this.decodeChain = this.decodeChain
       .then(async () => {
         if (!this.context) this.build();
+        await this.sinkReady;
         const context = this.context;
         if (!context || generation !== this.generation) return;
         // decodeAudioData detaches the buffer it is given, so hand it a private copy.
@@ -268,6 +302,7 @@ export class OutputBus {
   }
 
   close(): void {
+    this.closing = true;
     this.flush();
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;

@@ -65,6 +65,9 @@ test('settings: keys, diagnostics and language pair', async ({ page }) => {
   await expect(dialog.getByRole('cell', { name: 'OK' })).toHaveCount(3);
 
   await dialog.getByRole('tab', { name: 'Languages & style' }).click();
+  // Typing with spaces must survive (the stored copy is trimmed on every keystroke).
+  await dialog.getByLabel('Meeting context').pressSequentially('weekly planning call');
+  await expect(dialog.getByLabel('Meeting context')).toHaveValue('weekly planning call');
   await dialog.getByLabel('They speak').selectOption('en');
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();

@@ -5,15 +5,21 @@ import type { AudioDevice, DeviceState } from '../state/types';
  */
 
 /**
- * Labels of the virtual devices people use to feed audio into meeting apps:
+ * Labels of the virtual cables people use to feed audio into meeting apps:
  * VB-CABLE / VoiceMeeter (Windows), BlackHole / Loopback / Soundflower (macOS),
- * null sinks and monitor sources (Linux PipeWire / PulseAudio).
+ * null sinks (Linux PipeWire / PulseAudio), and the names from our own setup guide.
+ *
+ * Deliberately a list of known cables rather than "anything called virtual": meeting apps
+ * install private loopback devices ("Microsoft Teams Audio (Virtual)", "ZoomAudioDevice")
+ * and headsets advertise "virtual surround"; none of those carry audio into a call.
  */
-const VIRTUAL_DEVICE_PATTERN =
-  /vb-audio|vb-cable|\bcable[- ]?(input|output|in|out|[ab])\b|voicemeeter|blackhole|loopback|soundflower|\bvirtual\b|null[- ]?(sink|output)|monitor of|tarjuman/i;
+const VIRTUAL_CABLE_PATTERN =
+  /vb-audio|vb-cable|\bcable[- ]?(input|output|in|out|[ab])\b|voicemeeter|blackhole|loopback audio|soundflower|null[- ]?(sink|output)|tarjuman/i;
+
+const NOT_A_CABLE_PATTERN = /\bteams\b|zoom|surround/i;
 
 export function isVirtualDevice(label: string): boolean {
-  return VIRTUAL_DEVICE_PATTERN.test(label);
+  return VIRTUAL_CABLE_PATTERN.test(label) && !NOT_A_CABLE_PATTERN.test(label);
 }
 
 /** Pseudo-devices that duplicate a real one; we offer our own "System default" entry instead. */

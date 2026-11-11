@@ -2,13 +2,14 @@ import { API, type DiagnosticsReport, type KeysResponse } from '../../../shared/
 import { LANGUAGES, type LangCode } from '../../../shared/languages';
 import {
   floatToPcm16,
+  LIMITS,
   UTTERANCE_SAMPLE_RATE,
   type AudioUtteranceHeader,
   type ServerMessage,
   type SpeechChunkHeader,
 } from '../../../shared/protocol';
 import type { ChannelId } from '../../../shared/settings';
-import { cancelBrowserSpeech, speakWithBrowser } from '../audio/browserTts';
+import { cancelBrowserSpeech, primeBrowserVoices, speakWithBrowser } from '../audio/browserTts';
 import { CaptureChannel } from '../audio/capture';
 import { findDevice, listDevices } from '../audio/devices';
 import { OutputBus } from '../audio/output';
@@ -90,6 +91,12 @@ class Controller implements AppController {
   private readonly open = new Map<string, ChannelId>();
   /** Speech chunks received per utterance (decides whether the browser-voice fallback applies). */
   private readonly chunkCounts = new Map<string, number>();
+  /** Utterances the user skipped: any speech that still arrives for them is not played. */
+  private readonly skipped = new Set<string>();
+  /** The settings each running capture was opened with, to notice when they no longer match. */
+  private readonly openedWith: Record<ChannelId, string | null> = { outgoing: null, incoming: null };
+  /** The browser's own voice (the fallback) is talking on the default speakers. */
+  private browserSpeaking = false;
   private pttHeld = false;
   private idCounter = 0;
   private hintedAboutKeys = false;
@@ -110,6 +117,10 @@ class Controller implements AppController {
             this.busPlaying[id] = playing;
             this.updateGates();
           }
+        },
+        onInterrupted: () => {
+          // The device this bus played on is gone. Choose again (falls back to the default).
+          if (id !== 'monitor') void this.applySink(id);
         },
         onUtteranceStart: (utteranceId, atEpochMs) => {
           if (id === 'monitor') return;
@@ -155,8 +166,9 @@ class Controller implements AppController {
     void this.applySink('outgoing');
     void this.applySink('incoming');
 
+    primeBrowserVoices();
     this.connection.connect();
-    navigator.mediaDevices?.addEventListener?.('devicechange', () => void this.refreshDevices());
+    navigator.mediaDevices?.addEventListener?.('devicechange', () => void this.onDevicesChanged());
     await this.refreshDevices();
   }
 
@@ -204,8 +216,12 @@ class Controller implements AppController {
 
       case 'utterance.dropped': {
         const entry = useAppStore.getState().transcript.find((e) => e.id === message.id);
-        // Noise that never produced a word just disappears; a rejected transcript stays visible, muted.
-        if (entry?.sourceText && !entry.typed && message.reason !== 'cancelled') {
+        if (message.reason === 'cancelled') {
+          // Skipped by the user: what was already understood stays on screen, the rest goes.
+          if (entry?.sourceText) patchEntry(message.id, { status: 'done' });
+          else removeEntry(message.id);
+        } else if (entry?.sourceText && !entry.typed) {
+          // A rejected transcript stays visible, muted; noise that never produced a word disappears.
           patchEntry(message.id, { status: 'dropped', dropReason: message.reason });
         } else {
           removeEntry(message.id);
@@ -269,10 +285,16 @@ class Controller implements AppController {
     // but it would not reach the other side, so do not pretend it does.
     if (entry.channel === 'outgoing' && this.sinkIsVirtual('outgoing')) return;
     const rate = this.settings.session.channels[entry.channel].speechRate;
-    speakWithBrowser(text, LANGUAGES[entry.targetLang].locale, rate);
+    speakWithBrowser(text, LANGUAGES[entry.targetLang].locale, rate, (speaking) => {
+      // The browser's voice comes out of the loudspeakers like any other translated speech,
+      // so it takes part in the echo guard.
+      this.browserSpeaking = speaking;
+      this.updateGates();
+    });
   }
 
   private onSpeech(header: SpeechChunkHeader, audio: Uint8Array): void {
+    if (this.skipped.has(header.id)) return;
     this.chunkCounts.set(header.id, (this.chunkCounts.get(header.id) ?? 0) + 1);
     patchEntry(header.id, (entry) => ({
       status: entry.status === 'done' ? 'done' : 'speaking',
@@ -288,6 +310,7 @@ class Controller implements AppController {
   private settle(id: string): void {
     const channel = this.open.get(id);
     this.chunkCounts.delete(id);
+    this.skipped.delete(id);
     if (!channel) return;
     this.open.delete(id);
     this.syncPending(channel);
@@ -308,6 +331,7 @@ class Controller implements AppController {
     }
     this.open.clear();
     this.chunkCounts.clear();
+    this.skipped.clear();
     this.syncPending('outgoing');
     this.syncPending('incoming');
   }
@@ -368,6 +392,13 @@ class Controller implements AppController {
   sendText(channel: ChannelId, rawText: string): void {
     const text = rawText.trim();
     if (!text) return;
+    if (text.length > LIMITS.maxTextChars) {
+      pushNotice(
+        'warning',
+        `That is too long to interpret at once (limit ${LIMITS.maxTextChars} characters).`,
+      );
+      return;
+    }
     // Typing is a user action, which is what browsers require before audio may play.
     void this.unlockAudio();
     const id = this.newId();
@@ -384,10 +415,15 @@ class Controller implements AppController {
   // Capture
   // -------------------------------------------------------------------------------------
 
-  private unlockAudio(): Promise<unknown> {
+  /**
+   * Make audio playable (needs the user action that got us here), then route each bus to its
+   * configured device. Only now can the browser say whether a saved device is still usable.
+   */
+  private async unlockAudio(): Promise<void> {
     const buses = [this.buses.outgoing.unlock(), this.buses.incoming.unlock()];
     if (this.settings.outgoing.monitorGain > 0) buses.push(this.buses.monitor.unlock());
-    return Promise.all(buses);
+    await Promise.all(buses);
+    await Promise.all([this.applySink('outgoing'), this.applySink('incoming')]);
   }
 
   private openSource(channel: ChannelId): { kind: SourceKind; opening: Promise<OpenedSource> } {
@@ -415,6 +451,7 @@ class Controller implements AppController {
 
     // Both of these need the user's click that got us here, so start them before awaiting anything.
     const unlocking = this.unlockAudio();
+    const signature = this.captureSignature(channel);
     const { kind, opening } = this.openSource(channel);
 
     let source: OpenedSource;
@@ -424,6 +461,21 @@ class Controller implements AppController {
       this.captureFailed(channel, describeSourceError(error, kind));
       return;
     }
+
+    // Fired when the user stops sharing or unplugs the device (not when we stop the track).
+    // Listen from the first moment: the source can end while speech detection is still loading.
+    const track = source.stream.getAudioTracks()[0];
+    const onEnded = () => {
+      if (this.sources[channel] !== source) return;
+      this.stopChannel(channel);
+      pushNotice(
+        'warning',
+        channel === 'incoming'
+          ? 'Audio sharing ended, so the other side is no longer being interpreted.'
+          : 'The microphone was disconnected.',
+      );
+    };
+    track?.addEventListener('ended', onEnded);
 
     try {
       await unlocking;
@@ -435,23 +487,29 @@ class Controller implements AppController {
     }
 
     this.sources[channel] = source;
-    source.stream.getAudioTracks()[0]?.addEventListener('ended', () => {
-      // Fired when the user stops sharing or unplugs the device (not when we stop the track).
-      if (this.sources[channel] !== source) return;
-      this.stopChannel(channel);
-      pushNotice(
-        'warning',
-        channel === 'incoming'
-          ? 'Audio sharing ended, so the other side is no longer being interpreted.'
-          : 'The microphone was disconnected.',
-      );
-    });
+    this.openedWith[channel] = signature;
+    if (track?.readyState === 'ended') {
+      onEnded();
+      return;
+    }
 
     patchChannel(channel, { capture: 'capturing', captureError: null, sourceLabel: source.label });
     this.applyPassthrough();
     this.updateGates();
     // Device names become visible once any audio permission has been granted.
     void this.refreshDevices();
+    // The device or processing settings may have been changed while this start was under way.
+    if (this.captureSignature(channel) !== signature) void this.restartChannel(channel);
+  }
+
+  /**
+   * The settings a capture depends on, as one comparable value. A screen or tab share has
+   * none: it cannot be reopened without a click, so it is never restarted automatically.
+   */
+  private captureSignature(channel: ChannelId): string {
+    const s = this.settings;
+    if (channel === 'outgoing') return `mic:${s.outgoing.micDeviceId}:${s.headphones ? 'raw' : 'aec'}`;
+    return s.incoming.sourceKind === 'device' ? `device:${s.incoming.deviceId}` : 'display';
   }
 
   private captureFailed(channel: ChannelId, message: string): void {
@@ -468,6 +526,7 @@ class Controller implements AppController {
   stopChannel(channel: ChannelId): void {
     const source = this.sources[channel];
     this.sources[channel] = null;
+    this.openedWith[channel] = null;
     void this.captures[channel].stop();
     if (source) stopStream(source.stream);
     if (channel === 'outgoing') this.pttHeld = false;
@@ -545,7 +604,8 @@ class Controller implements AppController {
     const s = this.settings;
     // Translated speech that is audible in the room right now.
     const outgoingAudible = this.busPlaying.outgoing && !this.sinkIsVirtual('outgoing');
-    const audible = this.busPlaying.incoming || this.busPlaying.monitor || outgoingAudible;
+    const audible =
+      this.busPlaying.incoming || this.busPlaying.monitor || outgoingAudible || this.browserSpeaking;
 
     const pushToTalk = s.outgoing.micMode === 'push-to-talk';
     const micEcho = !s.headphones && audible;
@@ -578,6 +638,13 @@ class Controller implements AppController {
   }
 
   flushPlayback(channel: ChannelId): void {
+    // "Skip to live": drop what is queued here, and tell the server to stop working on
+    // everything of this channel that is still on its way.
+    for (const [id, openChannel] of this.open) {
+      if (openChannel !== channel) continue;
+      this.skipped.add(id);
+      this.connection.sendJson({ type: 'utterance.cancel', id });
+    }
     this.buses[channel].flush();
     if (channel === 'outgoing') this.buses.monitor.flush();
     cancelBrowserSpeech();
@@ -620,14 +687,14 @@ class Controller implements AppController {
       patchChannel('outgoing', { pttHeld: false });
     }
 
-    // A different microphone, or a change in echo cancellation, needs the stream reopened.
-    // (Screen / tab sharing cannot be reopened without a click, so it is left running.)
-    const micChanged =
-      previous.outgoing.micDeviceId !== next.outgoing.micDeviceId || previous.headphones !== next.headphones;
-    if (micChanged && this.sources.outgoing) void this.restartChannel('outgoing');
-    const lineInChanged =
-      previous.incoming.deviceId !== next.incoming.deviceId && this.sources.incoming?.kind === 'device';
-    if (lineInChanged) void this.restartChannel('incoming');
+    // A different microphone or line-in device, or a change in echo cancellation, needs the
+    // stream reopened. A capture that is still starting notices the change itself when it is up.
+    for (const channel of ['outgoing', 'incoming'] as const) {
+      const openedWith = this.openedWith[channel];
+      if (openedWith !== null && openedWith !== 'display' && openedWith !== this.captureSignature(channel)) {
+        void this.restartChannel(channel);
+      }
+    }
 
     this.applyPassthrough();
     this.updateGates();
@@ -636,13 +703,25 @@ class Controller implements AppController {
   /** Route a channel's translated speech (and, for incoming, the monitor) to its configured device. */
   private async applySink(channel: ChannelId): Promise<void> {
     const sinkId = this.settings[channel].sinkId;
-    const ok = await this.buses[channel].setSink(sinkId);
-    if (channel === 'incoming') await this.buses.monitor.setSink(sinkId);
+    const devices = useAppStore.getState().devices;
+    // A saved device that is not plugged in today cannot be used; say so instead of playing
+    // silently somewhere else. (Before device names are visible we cannot tell, and let the browser decide.)
+    const missing = sinkId !== '' && devices.labelsAvailable && !findDevice(devices.outputs, sinkId);
+    let ok = !missing && (await this.buses[channel].setSink(sinkId));
+    if (!ok) await this.buses[channel].setSink('');
+    if (channel === 'incoming') await this.buses.monitor.setSink(ok ? sinkId : '');
     // Settings may have changed again while the browser was switching devices.
     if (this.settings[channel].sinkId !== sinkId) return;
+    if (sinkId === '') ok = true;
     patchChannel(channel, { sinkOk: ok, sinkLabel: this.sinkLabel(sinkId) });
     this.applyPassthrough();
     this.updateGates();
+  }
+
+  /** A device was plugged in or removed: refresh the lists and re-route, falling back or returning as needed. */
+  private async onDevicesChanged(): Promise<void> {
+    await this.refreshDevices();
+    await Promise.all([this.applySink('outgoing'), this.applySink('incoming')]);
   }
 
   private sinkLabel(sinkId: string): string {

@@ -304,6 +304,40 @@ function GlossaryEditor() {
   );
 }
 
+function MeetingContext() {
+  const saved = useAppStore((state) => state.settings.session.meetingContext);
+  // The text is edited locally: the stored copy is trimmed on every change, and writing that
+  // back into the field would swallow each space the moment it is typed.
+  const [text, setText] = useState(saved);
+  return (
+    <div className="field">
+      <div className="field__head">
+        <label className="field__label" htmlFor="meeting-context">
+          Meeting context
+        </label>
+        <span className="field__note">
+          {text.length} / {MAX_MEETING_CONTEXT_CHARS}
+        </span>
+      </div>
+      <textarea
+        id="meeting-context"
+        className="textarea"
+        dir="auto"
+        maxLength={MAX_MEETING_CONTEXT_CHARS}
+        placeholder="For example: weekly planning call of a software team; we discuss releases, tickets and deadlines."
+        value={text}
+        onChange={(event) => {
+          setText(event.target.value);
+          controller().updateSettings({ session: { meetingContext: event.target.value } });
+        }}
+      />
+      <p className="field__note">
+        One or two sentences about the meeting help the translator pick the right terms.
+      </p>
+    </div>
+  );
+}
+
 function LanguagesTab() {
   const session = useAppStore((state) => state.settings.session);
   const mine = session.channels.outgoing.sourceLang;
@@ -383,30 +417,7 @@ function LanguagesTab() {
         onChange={(formality) => controller().updateSettings({ session: { formality } })}
       />
 
-      <div className="field">
-        <div className="field__head">
-          <label className="field__label" htmlFor="meeting-context">
-            Meeting context
-          </label>
-          <span className="field__note">
-            {session.meetingContext.length} / {MAX_MEETING_CONTEXT_CHARS}
-          </span>
-        </div>
-        <textarea
-          id="meeting-context"
-          className="textarea"
-          dir="auto"
-          maxLength={MAX_MEETING_CONTEXT_CHARS}
-          placeholder="For example: weekly planning call of a software team; we discuss releases, tickets and deadlines."
-          value={session.meetingContext}
-          onChange={(event) =>
-            controller().updateSettings({ session: { meetingContext: event.target.value } })
-          }
-        />
-        <p className="field__note">
-          One or two sentences about the meeting help the translator pick the right terms.
-        </p>
-      </div>
+      <MeetingContext />
 
       <GlossaryEditor />
     </div>
