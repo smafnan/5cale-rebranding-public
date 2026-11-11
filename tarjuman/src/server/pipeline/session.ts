@@ -57,6 +57,11 @@ export interface PipelineChains {
   tts: FallbackChain<TtsProvider>;
   /** Per-language preference among STT providers; lower is tried first. */
   sttRank: (provider: SttProvider, lang: LangCode) => number;
+  /**
+   * Whether a recognizer that can also translate may do so. False when the configured list
+   * of translators excludes it: translation must then go through the translation chain only.
+   */
+  recognizerMayTranslate: boolean;
 }
 
 export interface SessionOptions {
@@ -212,7 +217,9 @@ export class InterpreterSession {
             sampleRate: header.sampleRate,
             language,
             hints,
-            translate: { ...utterance.job, history: this.memory.recent() },
+            translate: this.chains.recognizerMayTranslate
+              ? { ...utterance.job, history: this.memory.recent() }
+              : undefined,
             signal,
           }),
         {
@@ -253,7 +260,7 @@ export class InterpreterSession {
         ms,
       });
       await this.translate(utterance, text, {
-        translations: run.value.translations,
+        translations: this.chains.recognizerMayTranslate ? run.value.translations : undefined,
         provider: run.provider.id,
       });
     });
@@ -343,7 +350,8 @@ export class InterpreterSession {
     utterance.timings.mtMs = ms;
     this.memory.add({ speaker, lang: job.sourceLang, text });
     this.transport.send({ type: 'utterance.translation', id, channel, translations, provider, ms });
-    if (this.logTranscripts) this.logger.debug({ id, channel, text, translations }, 'utterance translated');
+    // Switched on deliberately for debugging, so it must be visible at the default log level.
+    if (this.logTranscripts) this.logger.info({ id, channel, text, translations }, 'utterance translated');
 
     // Hand over to the speech lane and return, so the next utterance can be translated now.
     this.onSpeechLane(utterance, async () => {

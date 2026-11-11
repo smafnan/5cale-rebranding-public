@@ -1,8 +1,14 @@
-import 'dotenv/config';
+import { config as loadDotenv } from 'dotenv';
 
 import { ConfigError, isLoopbackHost, loadConfig } from './config';
 import { buildApp } from './http/app';
 import { createServices } from './services';
+import { nodeSupportsEnvProxy } from './startupEnv';
+
+// Recorded before .env is applied: only what was in the real environment when Node started
+// decides whether its fetch uses a proxy.
+const proxyFlagAtStart = process.env.NODE_USE_ENV_PROXY === '1';
+loadDotenv({ quiet: true });
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -57,9 +63,11 @@ async function main(): Promise<void> {
   app.log.info(`voice:              ${ready('tts')}`);
   if (config.mock) app.log.warn('TARJUMAN_MOCK is on: all providers are offline fakes.');
   for (const warning of services.warnings) app.log.warn(warning);
-  if ((process.env.HTTPS_PROXY || process.env.https_proxy) && !process.env.NODE_USE_ENV_PROXY) {
+  if ((process.env.HTTPS_PROXY || process.env.https_proxy) && !(proxyFlagAtStart && nodeSupportsEnvProxy())) {
     app.log.warn(
-      'HTTPS_PROXY is set, but Node only uses it for provider requests when NODE_USE_ENV_PROXY=1 is also set.',
+      'HTTPS_PROXY is set, but requests to Groq, Google, Azure and MyMemory will not use it: Node only ' +
+        'routes them through a proxy when NODE_USE_ENV_PROXY=1 is in the environment when it starts ' +
+        '(not in .env) and Node is 22.21 or newer. Example: NODE_USE_ENV_PROXY=1 npm start',
     );
   }
   if (!services.chains.stt.hasConfigured()) {

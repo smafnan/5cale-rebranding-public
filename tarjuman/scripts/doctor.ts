@@ -54,6 +54,7 @@ async function main(): Promise<number> {
       console.log(`  ${key.name.padEnd(24)} ${state}`);
     }
     if (config.mock) console.log(dim('\n  TARJUMAN_MOCK is on: every provider below is an offline fake.'));
+    for (const warning of services.warnings) console.log(red(`\n  ${warning}`));
     console.log(dim('\nTesting providers (one small request each)…'));
   }
 
@@ -69,11 +70,16 @@ async function main(): Promise<number> {
     if (!results.some((result) => result.outcome === 'ok')) missing.push(kind);
     if (json) continue;
     console.log(bold(`\n${KIND_TITLE[kind]}`));
-    const width = Math.max(...results.map((result) => result.label.length));
-    for (const result of results) {
+    // The id in brackets is what STT_PROVIDERS / MT_PROVIDERS / TTS_PROVIDERS expect.
+    const names = results.map((result) => `${result.label} ${dim(`[${result.id}]`)}`);
+    const plain = results.map((result) => `${result.label} [${result.id}]`.length);
+    const width = Math.max(0, ...plain);
+    results.forEach((result, index) => {
       const time = result.outcome === 'skipped' ? '' : `${String(result.ms).padStart(5)} ms  `;
-      console.log(`  ${MARK[result.outcome]}  ${result.label.padEnd(width)}  ${dim(time)}${result.detail}`);
-    }
+      const pad = ' '.repeat(width - (plain[index] ?? 0));
+      console.log(`  ${MARK[result.outcome]}  ${names[index]}${pad}  ${dim(time)}${result.detail}`);
+    });
+    if (results.length === 0) console.log(dim('  (no provider selected)'));
   }
 
   if (!json) {
@@ -82,7 +88,11 @@ async function main(): Promise<number> {
       console.log(green('Everything needed for a call is working.'));
     } else {
       for (const kind of missing) {
-        console.log(red(`${KIND_TITLE[kind]} has no working provider: `) + ADVICE[kind] + '.');
+        const selected = report.results.some((result) => result.kind === kind);
+        const advice = selected
+          ? ADVICE[kind]
+          : `the provider list ${kind.toUpperCase()}_PROVIDERS in .env selects none that exists (see the ids in brackets above and docs/PROVIDERS.md)`;
+        console.log(red(`${KIND_TITLE[kind]} has no working provider: `) + advice + '.');
       }
     }
     console.log('');

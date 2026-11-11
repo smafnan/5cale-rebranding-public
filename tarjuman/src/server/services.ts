@@ -42,7 +42,6 @@ export const KEY_DEFINITIONS: KeyDefinition[] = [
   },
   {
     name: 'GEMINI_API_KEY',
-    aliases: ['GOOGLE_API_KEY'],
     label: 'Google AI Studio (Gemini)',
     description:
       'Most accurate Urdu: hears the audio and translates in one step. Free tier, no credit card. ' +
@@ -83,18 +82,19 @@ const DEFAULTS = {
   groqMtModels: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
 };
 
+/** Id of the recognizer that hears the audio and translates in the same call. */
+const ONE_CALL_RECOGNIZER = 'gemini-audio';
+/** The translator that runs on the same model, and therefore stands for it in MT_PROVIDERS. */
+const ONE_CALL_TRANSLATOR = 'gemini-flash-lite';
+
 /**
- * Per-language preference among speech recognizers (ids, best first).
+ * Languages for which the multimodal recognizer is tried before Whisper.
  *
- * Urdu: a multimodal LLM that hears the audio is far more accurate than Whisper, above all
- * when English terms are mixed in. German and English: Whisper is excellent and faster, and
+ * Urdu: a model that hears the audio is far more accurate than Whisper, above all when
+ * English terms are mixed in. German and English: Whisper is excellent and faster, and
  * keeping them off Gemini saves its small free quota for Urdu.
  */
-const STT_PREFERENCE: Record<LangCode, string[]> = {
-  ur: ['gemini-audio', 'groq-whisper-large-v3', 'groq-whisper-large-v3-turbo'],
-  de: ['groq-whisper-large-v3', 'groq-whisper-large-v3-turbo', 'gemini-audio'],
-  en: ['groq-whisper-large-v3', 'groq-whisper-large-v3-turbo', 'gemini-audio'],
-};
+const MULTIMODAL_FIRST: ReadonlySet<LangCode> = new Set(['ur']);
 
 function list(value: string | undefined): string[] {
   return (value ?? '')
@@ -340,13 +340,19 @@ export async function createServices(
   const mt = chain('mt', providers.mt, 'MT_PROVIDERS');
   const tts = chain('tts', providers.tts, 'TTS_PROVIDERS');
 
-  // An explicit STT_PROVIDERS order is taken literally; otherwise prefer per language.
+  // An explicit STT_PROVIDERS order is taken literally; otherwise prefer per language. The rule
+  // is "multimodal first or last", not a list of ids, so it survives a change of Whisper models.
   const explicitSttOrder = Boolean(config.providerOrder.stt?.length);
   const sttRank = (provider: SttProvider, lang: LangCode): number => {
     if (explicitSttOrder) return 0;
-    const index = STT_PREFERENCE[lang].indexOf(provider.id);
-    return index === -1 ? STT_PREFERENCE[lang].length : index;
+    const multimodal = provider.id === ONE_CALL_RECOGNIZER;
+    return multimodal === MULTIMODAL_FIRST.has(lang) ? 0 : 1;
   };
+
+  // A recognizer that also translates would bypass the translation chain. With an explicit
+  // MT_PROVIDERS list that is only acceptable when the list includes the same model.
+  const mtList = config.mock ? undefined : config.providerOrder.mt;
+  const recognizerMayTranslate = !mtList?.length || mtList.includes(ONE_CALL_TRANSLATOR);
 
   // New keys deserve a fresh start: forget "key rejected" states and cooldowns.
   keys.onChange(() => {
@@ -368,7 +374,7 @@ export async function createServices(
   return {
     config,
     keys,
-    chains: { stt, mt, tts, sttRank },
+    chains: { stt, mt, tts, sttRank, recognizerMayTranslate },
     warnings,
     providerStatus,
     voices,

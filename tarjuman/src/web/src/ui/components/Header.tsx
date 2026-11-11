@@ -57,7 +57,9 @@ function ProviderChip({ kind }: { kind: ProviderKind }) {
                   className={`dot ${provider.state === 'ready' ? 'dot--ok' : provider.state === 'cooldown' ? 'dot--warn' : ''}`}
                   aria-hidden="true"
                 />
-                <span>{provider.label}</span>
+                <span title={`Provider id: ${provider.id}`}>
+                  {provider.label} <code className="chain__id">{provider.id}</code>
+                </span>
                 <span className="muted small">
                   {provider.state === 'cooldown' && provider.cooldownUntil
                     ? `${PROVIDER_STATE_LABEL.cooldown} · ${formatCountdown(provider.cooldownUntil - now)}`

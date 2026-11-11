@@ -81,6 +81,31 @@ describe('createServices', () => {
     expect(s.providerStatus().mt).toMatchObject([{ id: 'custom', state: 'ready' }]);
   });
 
+  it('lets the recognizer translate only when the translator list allows the same model', async () => {
+    expect((await services({})).chains.recognizerMayTranslate).toBe(true);
+    expect(
+      (await services({ MT_PROVIDERS: 'gemini-flash-lite,groq-gpt-oss-120b' })).chains.recognizerMayTranslate,
+    ).toBe(true);
+    expect((await services({ MT_PROVIDERS: 'custom' })).chains.recognizerMayTranslate).toBe(false);
+  });
+
+  it('keeps the per-language preference when the Whisper models are changed', async () => {
+    const s = await services({ GROQ_STT_MODELS: 'whisper-large-v4,whisper-large-v4-turbo' });
+    const order = (lang: 'ur' | 'de' | 'en') =>
+      [...s.chains.stt.providers]
+        .sort((a, b) => s.chains.sttRank(a, lang) - s.chains.sttRank(b, lang))
+        .map((p) => p.id);
+    expect(order('de')).toEqual(['groq-whisper-large-v4', 'groq-whisper-large-v4-turbo', 'gemini-audio']);
+    expect(order('en')[0]).toBe('groq-whisper-large-v4');
+    expect(order('ur')[0]).toBe('gemini-audio');
+  });
+
+  it('does not pick up a Google key that was exported for something else', async () => {
+    const s = await services({ GOOGLE_API_KEY: 'AIzaSomethingElse', GROQ_API_KEY: 'gsk_test' });
+    expect(s.keys.has('GEMINI_API_KEY')).toBe(false);
+    expect(s.providerStatus().stt.find((p) => p.id === 'gemini-audio')?.state).toBe('unconfigured');
+  });
+
   it('warns about provider ids that do not exist instead of silently ignoring them', async () => {
     const s = await services({ MT_PROVIDERS: 'groq-llama-3.3-70b,mymemory' });
     expect(ids(s.chains.mt.providers)).toEqual(['mymemory']);

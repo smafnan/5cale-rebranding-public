@@ -1,10 +1,13 @@
+import 'dotenv/config';
+
 import path from 'node:path';
 
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, normalizePath } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
-const SERVER = `http://127.0.0.1:${process.env.PORT ?? '8787'}`;
+// The same .env the server reads (loaded above), so a changed PORT moves the proxy with it.
+const SERVER = `http://127.0.0.1:${process.env.PORT || '8787'}`;
 
 /**
  * The web app lives in src/web and is built into dist/web, which the Node server serves.
@@ -23,7 +26,8 @@ export default defineConfig({
         'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',
         'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',
       ].map((file) => ({
-        src: path.resolve(import.meta.dirname, file),
+        // The plugin globs its sources, and globs need forward slashes: Windows paths must be normalised.
+        src: normalizePath(path.resolve(import.meta.dirname, file)),
         dest: 'vad',
         // Copy the files themselves, not their node_modules/... directory structure.
         rename: { stripBase: true },

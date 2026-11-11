@@ -47,6 +47,24 @@ const envSchema = z.object({
   TTS_PROVIDERS: csvList,
   /** Directory of the built web app. */
   WEB_DIR: z.string().optional(),
+  /**
+   * The address users open when the server sits behind a reverse proxy, e.g.
+   * https://tarjuman.example.com. Requests must then come from exactly this origin.
+   */
+  PUBLIC_ORIGIN: z
+    .string()
+    .optional()
+    .transform((value, context) => {
+      if (value === undefined) return undefined;
+      try {
+        const url = new URL(value);
+        if (url.protocol === 'http:' || url.protocol === 'https:') return url.origin;
+      } catch {
+        // fall through to the issue below
+      }
+      context.addIssue({ code: 'custom', message: 'must be an origin such as https://tarjuman.example.com' });
+      return z.NEVER;
+    }),
 });
 
 export interface AppConfig {
@@ -60,6 +78,8 @@ export interface AppConfig {
   mock: boolean;
   providerOrder: { stt?: string[]; mt?: string[]; tts?: string[] };
   webDir: string;
+  /** Origin of the reverse proxy in front of the server, when there is one. */
+  publicOrigin: string | undefined;
 }
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
@@ -76,7 +96,11 @@ export class ConfigError extends Error {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): AppConfig {
-  const parsed = envSchema.safeParse(env);
+  // An empty value means "not set": a copied .env.example is full of `NAME=` lines.
+  const provided = Object.fromEntries(
+    Object.entries(env).filter(([, value]) => value !== undefined && value.trim() !== ''),
+  );
+  const parsed = envSchema.safeParse(provided);
   if (!parsed.success) {
     const problems = parsed.error.issues
       .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
@@ -86,6 +110,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
   const e = parsed.data;
   const local = isLoopbackHost(e.HOST);
 
+  if (e.PUBLIC_ORIGIN && !e.ACCESS_TOKEN) {
+    throw new ConfigError(
+      'PUBLIC_ORIGIN means Tarjuman is reachable through a reverse proxy, which would let anyone who finds ' +
+        'the address spend your API quota. Set ACCESS_TOKEN (at least 8 characters) as well.',
+    );
+  }
   if (!local && !e.ACCESS_TOKEN) {
     throw new ConfigError(
       `HOST=${e.HOST} makes Tarjuman reachable from other machines, which would let anyone spend your ` +
@@ -104,5 +134,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     mock: e.TARJUMAN_MOCK ?? false,
     providerOrder: { stt: e.STT_PROVIDERS, mt: e.MT_PROVIDERS, tts: e.TTS_PROVIDERS },
     webDir: path.resolve(cwd, e.WEB_DIR ?? 'dist/web'),
+    publicOrigin: e.PUBLIC_ORIGIN,
   };
 }

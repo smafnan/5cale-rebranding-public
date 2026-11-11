@@ -142,8 +142,10 @@ JSON mode to plain. The first shape that works is remembered.
 All LLM providers use the same interpreter prompt and the same answer parser. The model
 returns JSON with English first and the spoken language second; the parser rejects answers
 in the wrong script, missing languages and rambling, which sends the request to the next
-provider. Text from the meeting is passed as data inside delimiters, and the prompt states
-that it is never an instruction.
+provider. Everything said in the meeting, the sentence being translated as well as the
+earlier turns given as context, is passed as data inside delimiters that it cannot close,
+and the prompt states that it is never an instruction. A model can still be talked into a
+wrong translation; it cannot be talked out of the answer format.
 
 ### The pipeline (`pipeline/session.ts`)
 
@@ -182,8 +184,10 @@ because this tool is used to talk about subtitles and translation.
   never sent to the browser; only masked hints are.
 - The page is served with a strict Content-Security-Policy and loads nothing from third
   parties: fonts, the VAD model and the ONNX runtime are bundled.
-- Meeting content is not logged unless `LOG_TRANSCRIPTS=1`; request URLs are logged without
-  their query string.
+- Transcripts and translations are not logged unless `LOG_TRANSCRIPTS=1`; request URLs are
+  logged without their query string.
+- Behind a reverse proxy the Host header no longer identifies the site, so `PUBLIC_ORIGIN`
+  names the one origin requests may come from.
 
 ## Decisions and their reasons
 

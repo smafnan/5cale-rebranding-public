@@ -40,6 +40,7 @@ const SENTENCE: Record<LangCode, string> = {
 function harness(
   scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = {},
   settings?: SessionSettings,
+  options: { recognizerMayTranslate?: boolean } = {},
 ) {
   const sttRequests: SttRequest[] = [];
   const mtRequests: MtRequest[] = [];
@@ -103,6 +104,7 @@ function harness(
       mt: new FallbackChain('mt', [mt]),
       tts: new FallbackChain('tts', [tts]),
       sttRank: () => 0,
+      recognizerMayTranslate: options.recognizerMayTranslate ?? true,
     },
     logger: { debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined },
     transport: {
@@ -198,6 +200,22 @@ describe('InterpreterSession', () => {
       translations: { de: 'Vom Erkenner.' },
     });
     expect(h.speech[0]?.text).toBe('Vom Erkenner.');
+  });
+
+  it('keeps translation in the translation chain when the recognizer is not allowed to translate', async () => {
+    const h = harness(
+      {
+        stt: () => ({ text: SENTENCE.ur, translations: { de: 'Vom Erkenner.', en: 'From the recognizer.' } }),
+      },
+      undefined,
+      { recognizerMayTranslate: false },
+    );
+    h.audio('u1');
+    await h.session.idle();
+    // The recognizer is not asked to translate, and what it returns anyway is not used.
+    expect(h.sttRequests[0]?.translate).toBeUndefined();
+    expect(h.mtRequests).toHaveLength(1);
+    expect(h.of('utterance.translation')[0]?.provider).toBe('mt');
   });
 
   it('still translates when the recognizer returned only some of the languages', async () => {

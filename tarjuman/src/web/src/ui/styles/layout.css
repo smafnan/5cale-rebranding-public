@@ -150,6 +150,11 @@
   font-size: 13px;
 }
 
+.chain__id {
+  color: var(--text-faint);
+  font: 11px var(--font-mono);
+}
+
 .chain__detail {
   grid-column: 2 / -1;
   color: var(--text-faint);

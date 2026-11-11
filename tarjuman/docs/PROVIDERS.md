@@ -86,7 +86,15 @@ A list is **exclusive**: only the listed providers are used, in that order. Anyt
 listed is never contacted, which is what makes "keep audio away from provider X" or
 "translate locally only" a guarantee. Unknown ids are reported when the server starts.
 Without a list, all providers are used in their default order. Setting `STT_PROVIDERS` also
-switches off the per-language preference.
+switches off the per-language preference (the multimodal recognizer first for Urdu, Whisper
+first for German and English).
+
+The Gemini recognizer normally translates in the same call. With an `MT_PROVIDERS` list
+that does not contain `gemini-flash-lite` it only transcribes, and the translation is done
+by the translators you listed.
+
+The ids are shown in square brackets by `npm run doctor`, and in the list that opens when
+you click a status chip in the app.
 
 Note that the keyless MyMemory translator is part of the default chain: when every other
 translator fails or is slow, the sentence is sent to it. Leave it out of `MT_PROVIDERS` if

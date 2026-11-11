@@ -78,6 +78,7 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
   const guard = async (request: FastifyRequest, reply: FastifyReply) => {
     const originProblem = checkRequestOrigin({
       listenHost: config.host,
+      publicOrigin: config.publicOrigin,
       hostHeader: request.headers.host,
       originHeader: request.headers.origin,
     });

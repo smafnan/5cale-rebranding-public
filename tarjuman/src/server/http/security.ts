@@ -30,6 +30,8 @@ const LOOPBACK_NAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 export interface OriginCheckInput {
   /** The address the server listens on. */
   listenHost: string;
+  /** Configured public origin when the server is behind a reverse proxy. */
+  publicOrigin?: string;
   hostHeader: string | undefined;
   originHeader: string | undefined;
 }
@@ -37,11 +39,23 @@ export interface OriginCheckInput {
 /**
  * Returns null when the request is acceptable, or a reason for rejecting it.
  *
- * - When listening on loopback, the Host header must be a loopback name (anti DNS rebinding).
- * - When the browser sends an Origin, it must be the same origin as the Host (anti cross-site).
- *   Non-browser clients send no Origin and are not affected.
+ * Directly reachable server (the normal case):
+ * - when listening on loopback, the Host header must be a loopback name (anti DNS rebinding);
+ * - when the browser sends an Origin, it must be the same origin as the Host (anti cross-site).
+ *
+ * Behind a reverse proxy the Host header is whatever the proxy sends upstream, so neither
+ * rule can work. With `publicOrigin` configured, the browser's Origin must equal it instead.
+ *
+ * Non-browser clients send no Origin and are not affected by the Origin rules.
  */
 export function checkRequestOrigin(input: OriginCheckInput): string | null {
+  if (input.publicOrigin) {
+    if (!input.originHeader) return null;
+    return input.originHeader.toLowerCase() === input.publicOrigin.toLowerCase()
+      ? null
+      : `cross-origin request from ${input.originHeader}`;
+  }
+
   const host = input.hostHeader?.trim().toLowerCase();
   if (!host) return 'missing Host header';
   if (isLoopbackHost(input.listenHost) && !LOOPBACK_NAMES.has(hostnameOf(host))) {

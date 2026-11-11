@@ -63,6 +63,7 @@ export class ConnectionHub {
     const { config } = this.services;
     const originProblem = checkRequestOrigin({
       listenHost: config.host,
+      publicOrigin: config.publicOrigin,
       hostHeader: request.headers.host,
       originHeader: request.headers.origin,
     });

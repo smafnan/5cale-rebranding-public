@@ -169,23 +169,24 @@ TARJUMAN_MOCK=1 npm start   # offline fakes instead of real providers
 `http://localhost:5173/?demo=1` shows the interface with sample data and no server.
 Configuration is described in [.env.example](.env.example); conventions for contributors
 in [AGENTS.md](AGENTS.md). A `Dockerfile` and `docker-compose.yml` are included for
-running the server elsewhere (an access token is then mandatory, and browsers require
-HTTPS for the microphone on anything but `localhost`).
+running the server elsewhere. An access token is then mandatory, browsers require HTTPS
+for the microphone on anything but `localhost`, and behind a reverse proxy `PUBLIC_ORIGIN`
+must be set to the address people open.
 
 ## Troubleshooting
 
-| Symptom                                                          | What to do                                                                                                                                                                      |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Speech recognition needs a free API key"                        | Add a Groq key under Settings → API keys.                                                                                                                                       |
-| A provider shows FAIL in `npm run doctor` with "model not found" | The provider retired that model. Set a current one in `.env` (see `.env.example`, section Models).                                                                              |
-| The other side hears nothing                                     | "Translated voice goes to" must be the virtual cable, and the Teams microphone its other end. Use "Play a test phrase" in the setup guide and watch the Teams microphone level. |
-| The other side hears a chopped voice                             | In Teams → Settings → Devices set Noise suppression to Low or Off and turn Voice isolation off.                                                                                 |
-| Nothing happens when they speak                                  | When sharing, the "Also share tab audio" box must be ticked. Stop and capture again.                                                                                            |
-| You hear the original and the translation on top of each other   | Lower the Teams volume, or switch on "Mute the captured tab itself" (Advanced) and set the original voice volume to taste.                                                      |
-| Your own translation is translated back                          | Wear headphones, or switch off "I am using headphones".                                                                                                                         |
-| Translations arrive late                                         | Look at the latency badge on each entry. Shorten "Pause that ends a sentence", speak in shorter sentences, or check which provider is active in the status chips.               |
-| Voice is missing, captions work                                  | The voice provider failed (see the note on the entry). Add an Azure AI Speech key.                                                                                              |
-| Behind a company proxy nothing connects                          | Start the server with `HTTPS_PROXY` set and `NODE_USE_ENV_PROXY=1`. If the proxy inspects TLS, also point `NODE_EXTRA_CA_CERTS` at your company's CA file.                      |
+| Symptom                                                          | What to do                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Speech recognition needs a free API key"                        | Add a Groq key under Settings → API keys.                                                                                                                                                                                                                  |
+| A provider shows FAIL in `npm run doctor` with "model not found" | The provider retired that model. Set a current one in `.env` (see `.env.example`, section Models).                                                                                                                                                         |
+| The other side hears nothing                                     | "Translated voice goes to" must be the virtual cable, and the Teams microphone its other end. Use "Play a test phrase" in the setup guide and watch the Teams microphone level.                                                                            |
+| The other side hears a chopped voice                             | In Teams → Settings → Devices set Noise suppression to Low or Off and turn Voice isolation off.                                                                                                                                                            |
+| Nothing happens when they speak                                  | When sharing, the "Also share tab audio" box must be ticked. Stop and capture again.                                                                                                                                                                       |
+| You hear the original and the translation on top of each other   | Lower the Teams volume, or switch on "Mute the captured tab itself" (Advanced) and set the original voice volume to taste.                                                                                                                                 |
+| Your own translation is translated back                          | Wear headphones, or switch off "I am using headphones".                                                                                                                                                                                                    |
+| Translations arrive late                                         | Look at the latency badge on each entry. Shorten "Pause that ends a sentence", speak in shorter sentences, or check which provider is active in the status chips.                                                                                          |
+| Voice is missing, captions work                                  | The voice provider failed (see the note on the entry). Add an Azure AI Speech key.                                                                                                                                                                         |
+| Behind a company proxy nothing connects                          | Start the server with the proxy in the real environment, not in `.env`: `HTTPS_PROXY=http://proxy:3128 NODE_USE_ENV_PROXY=1 npm start` (needs Node 22.21 or newer). If the proxy inspects TLS, also point `NODE_EXTRA_CA_CERTS` at your company's CA file. |
 
 ## Roadmap
 
