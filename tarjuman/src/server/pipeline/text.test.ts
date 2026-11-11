@@ -17,12 +17,17 @@ describe('splitForSpeech', () => {
   const join = (chunks: string[]) => chunks.join(' ');
 
   it('leaves short text alone', () => {
-    expect(splitForSpeech('Guten Morgen. Wie geht es Ihnen?', 'de')).toEqual(['Guten Morgen. Wie geht es Ihnen?']);
+    expect(splitForSpeech('Guten Morgen. Wie geht es Ihnen?', 'de')).toEqual([
+      'Guten Morgen. Wie geht es Ihnen?',
+    ]);
     expect(splitForSpeech('   ', 'de')).toEqual([]);
   });
 
   it('splits long text at sentence ends without losing or reordering anything', () => {
-    const text = Array.from({ length: 9 }, (_, i) => `Dies ist der Satz Nummer ${i + 1} einer längeren Erklärung.`).join(' ');
+    const text = Array.from(
+      { length: 9 },
+      (_, i) => `Dies ist der Satz Nummer ${i + 1} einer längeren Erklärung.`,
+    ).join(' ');
     const chunks = splitForSpeech(text, 'de');
     expect(chunks.length).toBeGreaterThan(1);
     expect(join(chunks)).toBe(text);
@@ -121,7 +126,9 @@ describe('judgeTranscript', () => {
   });
 
   it("applies Whisper's own no-speech rule and a confidence floor", () => {
-    expect(judgeTranscript('Guten Morgen zusammen.', evidence('de', { noSpeechProb: 0.8, avgLogProb: -1.2 }))).toMatchObject({
+    expect(
+      judgeTranscript('Guten Morgen zusammen.', evidence('de', { noSpeechProb: 0.8, avgLogProb: -1.2 })),
+    ).toMatchObject({
       keep: false,
       reason: 'no_speech',
     });
@@ -163,7 +170,8 @@ describe('judgeTranscript', () => {
 describe('ConversationMemory', () => {
   it('keeps the most recent turns within its bounds, oldest first', () => {
     const memory = new ConversationMemory(4, 20);
-    for (let i = 1; i <= 6; i++) memory.add({ speaker: i % 2 ? 'me' : 'them', lang: 'de', text: `Satz ${i}` });
+    for (let i = 1; i <= 6; i++)
+      memory.add({ speaker: i % 2 ? 'me' : 'them', lang: 'de', text: `Satz ${i}` });
     memory.add({ speaker: 'me', lang: 'de', text: '   ' });
     expect(memory.size).toBe(4);
     expect(memory.recent().map((turn) => turn.text)).toEqual(['Satz 3', 'Satz 4', 'Satz 5', 'Satz 6']);

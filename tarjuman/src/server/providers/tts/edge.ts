@@ -81,7 +81,10 @@ export function secMsGecV2(unixSeconds: number): string {
   let ticks = unixSeconds + WIN_EPOCH_SECONDS;
   ticks -= ticks % 300;
   ticks *= 1e7; // 100-nanosecond intervals
-  const message = Buffer.concat([TOKEN_PREFIX, Buffer.from(`${ticks.toFixed(0)}${TRUSTED_CLIENT_TOKEN}`, 'ascii')]);
+  const message = Buffer.concat([
+    TOKEN_PREFIX,
+    Buffer.from(`${ticks.toFixed(0)}${TRUSTED_CLIENT_TOKEN}`, 'ascii'),
+  ]);
   const sha = createHash('sha256').update(message).digest();
   return `${cs64(message, sha).toString('hex').toUpperCase()}-${sha.toString('hex').toUpperCase()}`;
 }
@@ -137,7 +140,10 @@ export function parseAudioFrame(frame: Buffer): { headers: Record<string, string
   const headerLength = frame.readUInt16BE(0);
   if (2 + headerLength > frame.length) throw new Error('binary frame header is longer than the frame');
   const headers: Record<string, string> = {};
-  for (const line of frame.subarray(2, 2 + headerLength).toString('utf8').split('\r\n')) {
+  for (const line of frame
+    .subarray(2, 2 + headerLength)
+    .toString('utf8')
+    .split('\r\n')) {
     const colon = line.indexOf(':');
     if (colon > 0) headers[line.slice(0, colon)] = line.slice(colon + 1);
   }
@@ -246,10 +252,13 @@ export class EdgeTtsProvider implements TtsProvider {
     if (error instanceof ProviderError) return error;
     if (signal.aborted) return new ProviderError(this.id, 'aborted', 'request aborted', { cause: error });
     if (error instanceof HandshakeRejected) {
-      if (error.status === 429) return new ProviderError(this.id, 'rate_limit', error.message, { status: 429 });
+      if (error.status === 429)
+        return new ProviderError(this.id, 'rate_limit', error.message, { status: 429 });
       // 403 after the clock-skew retry means the token scheme or client version was rejected.
       const kind = error.status >= 500 ? 'unavailable' : 'bad_request';
-      return new ProviderError(this.id, kind, `Edge voice service: ${error.message}`, { status: error.status });
+      return new ProviderError(this.id, kind, `Edge voice service: ${error.message}`, {
+        status: error.status,
+      });
     }
     const message = error instanceof Error ? error.message : String(error);
     return new ProviderError(this.id, 'unavailable', `Edge voice service: ${message}`, { cause: error });
@@ -294,7 +303,8 @@ export class EdgeTtsProvider implements TtsProvider {
         socket.terminate();
         outcome();
       };
-      const fail = (error: unknown) => finish(() => reject(error instanceof Error ? error : new Error(String(error))));
+      const fail = (error: unknown) =>
+        finish(() => reject(error instanceof Error ? error : new Error(String(error))));
       const onAbort = () => fail(new ProviderError(this.id, 'aborted', 'request aborted'));
 
       if (request.signal.aborted) return onAbort();
@@ -336,7 +346,9 @@ export class EdgeTtsProvider implements TtsProvider {
       });
 
       socket.on('error', fail);
-      socket.on('close', (code) => fail(new Error(`connection closed before the audio was complete (code ${code})`)));
+      socket.on('close', (code) =>
+        fail(new Error(`connection closed before the audio was complete (code ${code})`)),
+      );
     });
   }
 }

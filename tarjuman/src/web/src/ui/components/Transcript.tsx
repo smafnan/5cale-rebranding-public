@@ -95,7 +95,9 @@ const Entry = memo(function Entry({ entry }: { entry: TranscriptEntry }) {
         </p>
       ))}
 
-      {entry.status === 'error' ? <p className="entry__error">{entry.error ?? 'Something went wrong.'}</p> : null}
+      {entry.status === 'error' ? (
+        <p className="entry__error">{entry.error ?? 'Something went wrong.'}</p>
+      ) : null}
       {entry.status !== 'error' && entry.error ? <p className="entry__note">{entry.error}</p> : null}
     </li>
   );
@@ -165,7 +167,11 @@ function Toolbar({ hasEntries }: { hasEntries: boolean }) {
             >
               Clear everything
             </button>
-            <button type="button" className="button button--quiet button--small" onClick={() => setConfirming(false)}>
+            <button
+              type="button"
+              className="button button--quiet button--small"
+              onClick={() => setConfirming(false)}
+            >
               Keep
             </button>
           </>

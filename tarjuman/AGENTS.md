@@ -10,17 +10,17 @@ Start with `README.md` and `docs/ARCHITECTURE.md`.
 
 ## Layout
 
-| Path | What lives there |
-| --- | --- |
-| `src/shared/` | Wire protocol, settings, REST contracts, language registry. No dependencies. |
-| `src/server/providers/` | One file per provider, the provider interfaces (`types.ts`) and the fallback chain (`chain.ts`). |
-| `src/server/pipeline/` | Per-call logic: ordering, hallucination filter, speech chunking, conversation memory. |
-| `src/server/http/` | Fastify app, WebSocket transport, validation, origin checks. |
-| `src/server/services.ts` | Composition root: which providers exist, their order, their keys. |
-| `src/web/src/audio/` | Capture, speech segmentation, output buses. |
-| `src/web/src/app/` | The controller: the only writer of the store. |
-| `src/web/src/ui/` | React components. Read the store, call the controller, nothing else. |
-| `tests/e2e/` | Playwright tests against the real server with mock providers. |
+| Path                     | What lives there                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `src/shared/`            | Wire protocol, settings, REST contracts, language registry. No dependencies.                     |
+| `src/server/providers/`  | One file per provider, the provider interfaces (`types.ts`) and the fallback chain (`chain.ts`). |
+| `src/server/pipeline/`   | Per-call logic: ordering, hallucination filter, speech chunking, conversation memory.            |
+| `src/server/http/`       | Fastify app, WebSocket transport, validation, origin checks.                                     |
+| `src/server/services.ts` | Composition root: which providers exist, their order, their keys.                                |
+| `src/web/src/audio/`     | Capture, speech segmentation, output buses.                                                      |
+| `src/web/src/app/`       | The controller: the only writer of the store.                                                    |
+| `src/web/src/ui/`        | React components. Read the store, call the controller, nothing else.                             |
+| `tests/e2e/`             | Playwright tests against the real server with mock providers.                                    |
 
 ## Rules that keep it healthy
 

@@ -28,7 +28,13 @@ describe('sanitizeSessionSettings', () => {
   it('passes valid settings through unchanged', () => {
     const valid: SessionSettings = {
       channels: {
-        outgoing: { sourceLang: 'en', targetLang: 'de', voice: 'de-DE-ConradNeural', speak: false, speechRate: 1.2 },
+        outgoing: {
+          sourceLang: 'en',
+          targetLang: 'de',
+          voice: 'de-DE-ConradNeural',
+          speak: false,
+          speechRate: 1.2,
+        },
         incoming: { sourceLang: 'de', targetLang: 'en', voice: 'auto', speak: true, speechRate: 0.9 },
       },
       captionLangs: ['ur'],
@@ -152,16 +158,17 @@ describe('sanitizeSessionSettings', () => {
   });
 
   it('trims and truncates the meeting context', () => {
-    expect(sanitizeSessionSettings({ meetingContext: '  budget review  ' }).meetingContext).toBe('budget review');
+    expect(sanitizeSessionSettings({ meetingContext: '  budget review  ' }).meetingContext).toBe(
+      'budget review',
+    );
     const long = sanitizeSessionSettings({ meetingContext: 'z'.repeat(5_000) }).meetingContext;
     expect(long).toHaveLength(MAX_MEETING_CONTEXT_CHARS);
   });
 
   it('de-duplicates caption languages and drops unknown ones', () => {
-    expect(sanitizeSessionSettings({ captionLangs: ['en', 'fr', 'en', 5, null, 'ur', 'en'] }).captionLangs).toEqual([
-      'en',
-      'ur',
-    ]);
+    expect(
+      sanitizeSessionSettings({ captionLangs: ['en', 'fr', 'en', 5, null, 'ur', 'en'] }).captionLangs,
+    ).toEqual(['en', 'ur']);
   });
 
   it('respects an explicitly empty caption list but defaults a missing one', () => {
@@ -176,7 +183,10 @@ describe('sanitizeSessionSettings', () => {
   });
 
   it('ignores unknown properties', () => {
-    const result = sanitizeSessionSettings({ admin: true, channels: { outgoing: { evil: 1 }, sideways: {} } });
+    const result = sanitizeSessionSettings({
+      admin: true,
+      channels: { outgoing: { evil: 1 }, sideways: {} },
+    });
     expect(result).toEqual(DEFAULT_SESSION_SETTINGS);
   });
 
@@ -202,7 +212,10 @@ describe('translationTargets', () => {
   });
 
   it('does not repeat the target language', () => {
-    expect(translationTargets(settings({ captionLangs: ['de', 'en', 'de'] }), 'outgoing')).toEqual(['de', 'en']);
+    expect(translationTargets(settings({ captionLangs: ['de', 'en', 'de'] }), 'outgoing')).toEqual([
+      'de',
+      'en',
+    ]);
   });
 
   it('never asks for a translation into the source language', () => {
@@ -224,7 +237,8 @@ describe('translationTargets', () => {
 describe('language registry', () => {
   it('recognises exactly the registered codes', () => {
     expect(LANG_CODES.every((code) => isLangCode(code))).toBe(true);
-    for (const value of ['fr', 'UR', '', 'urdu', 1, null, undefined, {}]) expect(isLangCode(value)).toBe(false);
+    for (const value of ['fr', 'UR', '', 'urdu', 1, null, undefined, {}])
+      expect(isLangCode(value)).toBe(false);
   });
 
   it('has one consistent entry per code', () => {

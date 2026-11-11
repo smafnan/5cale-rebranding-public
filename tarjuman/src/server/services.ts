@@ -72,7 +72,12 @@ export const KEY_DEFINITIONS: KeyDefinition[] = [
 
 /** Default model ids. All can be overridden from the environment (see .env.example). */
 const DEFAULTS = {
-  geminiModels: ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite'],
+  geminiModels: [
+    'gemini-3.5-flash-lite',
+    'gemini-flash-lite-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash-lite',
+  ],
   gemmaModels: ['gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemma-3-27b-it'],
   groqSttModels: ['whisper-large-v3', 'whisper-large-v3-turbo'],
   groqMtModels: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
@@ -128,12 +133,15 @@ function buildProviders(keys: KeyStore, env: NodeJS.ProcessEnv, mock: boolean): 
   const geminiKey = () => keys.get('GEMINI_API_KEY');
   const geminiModels = [...list(env.GEMINI_MODEL), ...DEFAULTS.geminiModels];
   const gemmaModels = [...list(env.GEMMA_MODEL), ...DEFAULTS.gemmaModels];
-  const groqSttModels = list(env.GROQ_STT_MODELS).length > 0 ? list(env.GROQ_STT_MODELS) : DEFAULTS.groqSttModels;
+  const groqSttModels =
+    list(env.GROQ_STT_MODELS).length > 0 ? list(env.GROQ_STT_MODELS) : DEFAULTS.groqSttModels;
   const groqMtModels = list(env.GROQ_MT_MODELS).length > 0 ? list(env.GROQ_MT_MODELS) : DEFAULTS.groqMtModels;
 
   const stt: SttProvider[] = [
     new GeminiAudioSttProvider({ getKey: geminiKey, models: geminiModels }),
-    ...groqSttModels.map((model) => new GroqWhisperProvider({ id: `groq-${slug(model)}`, model, getKey: groqKey })),
+    ...groqSttModels.map(
+      (model) => new GroqWhisperProvider({ id: `groq-${slug(model)}`, model, getKey: groqKey }),
+    ),
   ];
 
   const mt: MtProvider[] = [
@@ -169,7 +177,10 @@ function buildProviders(keys: KeyStore, env: NodeJS.ProcessEnv, mock: boolean): 
   ];
 
   const tts: TtsProvider[] = [
-    new AzureTtsProvider({ getKey: () => keys.get('AZURE_SPEECH_KEY'), getRegion: () => env.AZURE_SPEECH_REGION }),
+    new AzureTtsProvider({
+      getKey: () => keys.get('AZURE_SPEECH_KEY'),
+      getRegion: () => env.AZURE_SPEECH_REGION,
+    }),
     new EdgeTtsProvider(),
   ];
 
@@ -214,7 +225,12 @@ const DIAGNOSTIC_TIMEOUT_MS = 15_000;
 async function probe(provider: AnyProvider): Promise<DiagnosticResult> {
   const base = { kind: provider.kind, id: provider.id, label: provider.label };
   if (!provider.isConfigured()) {
-    return { ...base, outcome: 'skipped', ms: 0, detail: provider.requiresKey ? 'API key not set' : 'not configured' };
+    return {
+      ...base,
+      outcome: 'skipped',
+      ms: 0,
+      detail: provider.requiresKey ? 'API key not set' : 'not configured',
+    };
   }
   const signal = AbortSignal.timeout(DIAGNOSTIC_TIMEOUT_MS);
   const startedAt = Date.now();
@@ -229,7 +245,9 @@ async function probe(provider: AnyProvider): Promise<DiagnosticResult> {
         signal,
       });
       // The test tone is not speech; an empty transcript is the correct answer.
-      detail = result.text ? `key and model accepted (heard: "${result.text.slice(0, 60)}")` : 'key and model accepted';
+      detail = result.text
+        ? `key and model accepted (heard: "${result.text.slice(0, 60)}")`
+        : 'key and model accepted';
     } else if (provider.kind === 'mt') {
       const result = await provider.translate({
         text: 'Guten Morgen, können Sie mich gut hören?',
@@ -255,12 +273,19 @@ async function probe(provider: AnyProvider): Promise<DiagnosticResult> {
     }
     return { ...base, outcome: 'ok', ms: Date.now() - startedAt, detail };
   } catch (error) {
-    const detail = signal.aborted ? 'no answer within 15 s' : error instanceof Error ? error.message : String(error);
+    const detail = signal.aborted
+      ? 'no answer within 15 s'
+      : error instanceof Error
+        ? error.message
+        : String(error);
     return { ...base, outcome: 'failed', ms: Date.now() - startedAt, detail };
   }
 }
 
-export async function createServices(config: AppConfig, env: NodeJS.ProcessEnv = process.env): Promise<Services> {
+export async function createServices(
+  config: AppConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<Services> {
   const keys = new KeyStore({ definitions: KEY_DEFINITIONS, env, dataDir: config.dataDir });
   await keys.load();
 
@@ -277,9 +302,15 @@ export async function createServices(config: AppConfig, env: NodeJS.ProcessEnv =
   };
 
   const providers = buildProviders(keys, env, config.mock);
-  const stt = new FallbackChain('stt', applyOrder(providers.stt, config.providerOrder.stt), { onStatusChange: notify });
-  const mt = new FallbackChain('mt', applyOrder(providers.mt, config.providerOrder.mt), { onStatusChange: notify });
-  const tts = new FallbackChain('tts', applyOrder(providers.tts, config.providerOrder.tts), { onStatusChange: notify });
+  const stt = new FallbackChain('stt', applyOrder(providers.stt, config.providerOrder.stt), {
+    onStatusChange: notify,
+  });
+  const mt = new FallbackChain('mt', applyOrder(providers.mt, config.providerOrder.mt), {
+    onStatusChange: notify,
+  });
+  const tts = new FallbackChain('tts', applyOrder(providers.tts, config.providerOrder.tts), {
+    onStatusChange: notify,
+  });
 
   // An explicit STT_PROVIDERS order is taken literally; otherwise prefer per language.
   const explicitSttOrder = Boolean(config.providerOrder.stt?.length);

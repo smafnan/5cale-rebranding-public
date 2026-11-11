@@ -48,7 +48,9 @@ async function main(): Promise<number> {
   if (!json) {
     console.log(bold('\nKeys'));
     for (const key of services.keys.status()) {
-      const state = key.set ? green(`set (${key.source === 'env' ? 'environment' : 'saved in the app'}, ${key.hint})`) : dim('not set');
+      const state = key.set
+        ? green(`set (${key.source === 'env' ? 'environment' : 'saved in the app'}, ${key.hint})`)
+        : dim('not set');
       console.log(`  ${key.name.padEnd(24)} ${state}`);
     }
     if (config.mock) console.log(dim('\n  TARJUMAN_MOCK is on: every provider below is an offline fake.'));

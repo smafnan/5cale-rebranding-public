@@ -39,7 +39,9 @@ describe('secMsGecV2', () => {
 
 describe('message building', () => {
   it('expands short voice names the way the Edge browser sends them', () => {
-    expect(longVoiceName('ur-PK-UzmaNeural')).toBe('Microsoft Server Speech Text to Speech Voice (ur-PK, UzmaNeural)');
+    expect(longVoiceName('ur-PK-UzmaNeural')).toBe(
+      'Microsoft Server Speech Text to Speech Voice (ur-PK, UzmaNeural)',
+    );
     expect(longVoiceName('de-DE-SeraphinaMultilingualNeural')).toBe(
       'Microsoft Server Speech Text to Speech Voice (de-DE, SeraphinaMultilingualNeural)',
     );
@@ -50,13 +52,20 @@ describe('message building', () => {
   });
 
   it('escapes text and encodes the speaking rate in the SSML request', () => {
-    const message = buildSsmlMessage('Tom & Jerry <b> "x"', 'de-DE-KatjaNeural', 1.1, new Date(Date.UTC(2026, 10, 11, 9, 5, 7)));
+    const message = buildSsmlMessage(
+      'Tom & Jerry <b> "x"',
+      'de-DE-KatjaNeural',
+      1.1,
+      new Date(Date.UTC(2026, 10, 11, 9, 5, 7)),
+    );
     const [head, body] = message.split('\r\n\r\n');
     expect(head).toContain('Path:ssml');
     expect(head).toContain('Content-Type:application/ssml+xml');
     expect(head).toMatch(/X-RequestId:[0-9a-f]{32}/);
     expect(head).toContain('X-Timestamp:Wed Nov 11 2026 09:05:07 GMT+0000 (Coordinated Universal Time)Z');
-    expect(body).toContain("<voice name='Microsoft Server Speech Text to Speech Voice (de-DE, KatjaNeural)'>");
+    expect(body).toContain(
+      "<voice name='Microsoft Server Speech Text to Speech Voice (de-DE, KatjaNeural)'>",
+    );
     expect(body).toContain("rate='+10%'");
     expect(body).toContain('Tom &amp; Jerry &lt;b&gt; "x"');
   });
@@ -105,7 +114,10 @@ interface FakeService {
 type Behaviour = (socket: WebSocket, received: string[], attempt: number) => void;
 
 /** Rejects the first `rejectFirst` upgrades with HTTP 403 (and a Date header), then behaves as given. */
-async function fakeService(behaviour: Behaviour, options: { rejectFirst?: number; date?: Date } = {}): Promise<FakeService> {
+async function fakeService(
+  behaviour: Behaviour,
+  options: { rejectFirst?: number; date?: Date } = {},
+): Promise<FakeService> {
   const upgrades: IncomingMessage[] = [];
   const received: string[] = [];
   let attempt = 0;
@@ -203,7 +215,9 @@ describe('EdgeTtsProvider against a local service', () => {
   it('falls back to the default voice of the language when the requested voice does not fit', async () => {
     service = await fakeService(speakNormally);
     const provider = new EdgeTtsProvider({ endpoint: service.url });
-    const result = await provider.synthesize(request({ lang: 'ur', voice: 'de-DE-KatjaNeural', text: 'سلام' }));
+    const result = await provider.synthesize(
+      request({ lang: 'ur', voice: 'de-DE-KatjaNeural', text: 'سلام' }),
+    );
     expect(result.voice).toBe('ur-PK-UzmaNeural');
   });
 
@@ -218,7 +232,8 @@ describe('EdgeTtsProvider against a local service', () => {
 
     expect(Buffer.from(result.audio).toString()).toBe('first-second');
     expect(service.upgrades).toHaveLength(2);
-    const token = (index: number) => new URL(service!.upgrades[index]!.url ?? '', 'ws://x').searchParams.get('Sec-MS-GEC');
+    const token = (index: number) =>
+      new URL(service!.upgrades[index]!.url ?? '', 'ws://x').searchParams.get('Sec-MS-GEC');
     expect(token(0)).toBe(secMsGecV2(localNow / 1000));
     expect(token(1)).toBe(secMsGecV2(serverNow.getTime() / 1000));
   });

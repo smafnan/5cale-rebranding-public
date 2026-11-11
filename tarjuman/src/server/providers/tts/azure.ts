@@ -23,7 +23,10 @@ export interface AzureCredentials {
  * Accepts either `region:key` in the key itself (convenient for the Settings dialog, which
  * has one field per service) or a bare key plus a separately configured region.
  */
-export function parseAzureCredentials(rawKey: string | undefined, region: string | undefined): AzureCredentials | undefined {
+export function parseAzureCredentials(
+  rawKey: string | undefined,
+  region: string | undefined,
+): AzureCredentials | undefined {
   const value = rawKey?.trim();
   if (!value) return undefined;
   const colon = value.indexOf(':');
@@ -79,7 +82,11 @@ export class AzureTtsProvider implements TtsProvider {
   async synthesize(request: TtsRequest): Promise<TtsResult> {
     const credentials = this.credentials();
     if (!credentials) {
-      throw new ProviderError(this.id, 'auth', 'AZURE_SPEECH_KEY (as region:key) or AZURE_SPEECH_REGION is not set');
+      throw new ProviderError(
+        this.id,
+        'auth',
+        'AZURE_SPEECH_KEY (as region:key) or AZURE_SPEECH_REGION is not set',
+      );
     }
     const voice = resolveVoice(request.lang, request.voice);
     const ssml =

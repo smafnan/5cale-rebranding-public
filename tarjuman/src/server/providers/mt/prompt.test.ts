@@ -15,7 +15,10 @@ const URDU = 'ہم اگلے ہفتے نیا ورژن جاری کریں گے۔';
 const GERMAN = 'Wir veröffentlichen nächste Woche die neue Version.';
 const ENGLISH = 'We will release the new version next week.';
 
-function parse(raw: string, options: { withTranscript?: boolean; job?: ReturnType<typeof translationJob> } = {}) {
+function parse(
+  raw: string,
+  options: { withTranscript?: boolean; job?: ReturnType<typeof translationJob> } = {},
+) {
   return parseInterpreterAnswer('test', raw, options.job ?? translationJob(), {
     withTranscript: options.withTranscript ?? false,
     sourceText: URDU,
@@ -48,7 +51,10 @@ describe('interpreter prompt', () => {
   });
 
   it('asks for a transcript first in audio mode', () => {
-    const prompt = buildSystemPrompt(translationJob({ sourceLang: 'de', targetLangs: ['ur', 'en'] }), 'audio');
+    const prompt = buildSystemPrompt(
+      translationJob({ sourceLang: 'de', targetLangs: ['ur', 'en'] }),
+      'audio',
+    );
     expect(prompt).toContain('First transcribe it verbatim');
     expect(prompt).toContain('{"skip": boolean, "transcript": string, "en": string, "ur": string}');
   });
@@ -56,7 +62,10 @@ describe('interpreter prompt', () => {
   it('puts English first in the answer, then the spoken language', () => {
     expect(answerOrder(['de', 'en'])).toEqual(['en', 'de']);
     expect(answerOrder(['ur'])).toEqual(['ur']);
-    const schema = answerJsonSchema(translationJob(), true) as { required: string[]; additionalProperties: boolean };
+    const schema = answerJsonSchema(translationJob(), true) as {
+      required: string[];
+      additionalProperties: boolean;
+    };
     expect(schema.required).toEqual(['skip', 'transcript', 'en', 'de']);
     expect(schema.additionalProperties).toBe(false);
   });
@@ -91,13 +100,21 @@ describe('parseInterpreterAnswer', () => {
   const good = JSON.stringify({ skip: false, en: ENGLISH, de: GERMAN });
 
   it('reads clean JSON, fenced JSON and JSON wrapped in prose', () => {
-    for (const raw of [good, '```json\n' + good + '\n```', `Here is the translation:\n${good}\nHope this helps.`]) {
+    for (const raw of [
+      good,
+      '```json\n' + good + '\n```',
+      `Here is the translation:\n${good}\nHope this helps.`,
+    ]) {
       expect(parse(raw)).toEqual({ skip: false, transcript: '', translations: { de: GERMAN, en: ENGLISH } });
     }
   });
 
   it('honours skip', () => {
-    expect(parse('{"skip": true, "en": "", "de": ""}')).toEqual({ skip: true, transcript: '', translations: {} });
+    expect(parse('{"skip": true, "en": "", "de": ""}')).toEqual({
+      skip: true,
+      transcript: '',
+      translations: {},
+    });
   });
 
   it('rejects answers that are not JSON objects', () => {
@@ -111,26 +128,47 @@ describe('parseInterpreterAnswer', () => {
 
   it('rejects an empty answer in text mode but treats it as "no speech" in audio mode', () => {
     expect(badResponse(() => parse('{"skip": false, "en": "", "de": ""}'))).toContain('no translation');
-    expect(parse('{"skip": false, "transcript": "", "en": "", "de": ""}', { withTranscript: true }).skip).toBe(true);
+    expect(
+      parse('{"skip": false, "transcript": "", "en": "", "de": ""}', { withTranscript: true }).skip,
+    ).toBe(true);
   });
 
   it('rejects translations in the wrong script', () => {
     const toUrdu = translationJob({ sourceLang: 'de', targetLangs: ['ur', 'en'] });
-    expect(badResponse(() => parse(JSON.stringify({ skip: false, en: ENGLISH, ur: 'Hum agle hafte naya version jari karenge.' }), { job: toUrdu }))).toContain('wrong script');
-    expect(badResponse(() => parse(JSON.stringify({ skip: false, en: ENGLISH, ur: 'हम अगले हफ्ते नया संस्करण जारी करेंगे।' }), { job: toUrdu }))).toContain('wrong script');
-    expect(badResponse(() => parse(JSON.stringify({ skip: false, en: ENGLISH, de: URDU })))).toContain('wrong script');
+    expect(
+      badResponse(() =>
+        parse(JSON.stringify({ skip: false, en: ENGLISH, ur: 'Hum agle hafte naya version jari karenge.' }), {
+          job: toUrdu,
+        }),
+      ),
+    ).toContain('wrong script');
+    expect(
+      badResponse(() =>
+        parse(JSON.stringify({ skip: false, en: ENGLISH, ur: 'हम अगले हफ्ते नया संस्करण जारी करेंगे।' }), {
+          job: toUrdu,
+        }),
+      ),
+    ).toContain('wrong script');
+    expect(badResponse(() => parse(JSON.stringify({ skip: false, en: ENGLISH, de: URDU })))).toContain(
+      'wrong script',
+    );
   });
 
   it('rejects a rambling answer', () => {
     const rambling = `${GERMAN} `.repeat(12);
-    expect(badResponse(() => parse(JSON.stringify({ skip: false, en: ENGLISH, de: rambling })))).toContain('implausibly long');
+    expect(badResponse(() => parse(JSON.stringify({ skip: false, en: ENGLISH, de: rambling })))).toContain(
+      'implausibly long',
+    );
   });
 
   it('requires a transcript in the source script in audio mode', () => {
-    const answer = (transcript: string) => JSON.stringify({ skip: false, transcript, en: ENGLISH, de: GERMAN });
+    const answer = (transcript: string) =>
+      JSON.stringify({ skip: false, transcript, en: ENGLISH, de: GERMAN });
     expect(parse(answer(URDU), { withTranscript: true }).transcript).toBe(URDU);
     expect(badResponse(() => parse(answer(''), { withTranscript: true }))).toContain('without a transcript');
-    expect(badResponse(() => parse(answer('हम अगले हफ्ते'), { withTranscript: true }))).toContain('Urdu script');
+    expect(badResponse(() => parse(answer('हम अगले हफ्ते'), { withTranscript: true }))).toContain(
+      'Urdu script',
+    );
   });
 });
 

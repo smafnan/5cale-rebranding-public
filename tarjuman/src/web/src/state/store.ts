@@ -197,7 +197,8 @@ export function patchChannel(channel: ChannelId, patch: Partial<ChannelRuntime>)
 export function addEntry(entry: TranscriptEntry): void {
   useAppStore.setState((state) => {
     const transcript = [...state.transcript, entry];
-    if (transcript.length > MAX_TRANSCRIPT_ENTRIES) transcript.splice(0, transcript.length - MAX_TRANSCRIPT_ENTRIES);
+    if (transcript.length > MAX_TRANSCRIPT_ENTRIES)
+      transcript.splice(0, transcript.length - MAX_TRANSCRIPT_ENTRIES);
     return { transcript };
   });
 }

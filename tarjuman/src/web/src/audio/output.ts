@@ -191,7 +191,10 @@ export class OutputBus {
         const context = this.context;
         if (!context || generation !== this.generation) return;
         // decodeAudioData detaches the buffer it is given, so hand it a private copy.
-        const copy = item.bytes.buffer.slice(item.bytes.byteOffset, item.bytes.byteOffset + item.bytes.byteLength);
+        const copy = item.bytes.buffer.slice(
+          item.bytes.byteOffset,
+          item.bytes.byteOffset + item.bytes.byteLength,
+        );
         const buffer = await context.decodeAudioData(copy as ArrayBuffer);
         if (generation !== this.generation) return;
         this.schedule(context, buffer, item);
@@ -222,7 +225,10 @@ export class OutputBus {
 
     if (item.index === 0) {
       const outputLatency = Number.isFinite(context.outputLatency) ? context.outputLatency : 0;
-      this.callbacks.onUtteranceStart?.(item.utteranceId, Date.now() + (startAt - now + outputLatency) * 1000);
+      this.callbacks.onUtteranceStart?.(
+        item.utteranceId,
+        Date.now() + (startAt - now + outputLatency) * 1000,
+      );
     }
     this.report();
   }

@@ -40,7 +40,11 @@ export function nextTick(): Promise<void> {
 }
 
 /** Poll until `predicate` holds. Fails instead of hanging when it never does. */
-export async function waitFor(predicate: () => boolean, what = 'condition', timeoutMs = 4_000): Promise<void> {
+export async function waitFor(
+  predicate: () => boolean,
+  what = 'condition',
+  timeoutMs = 4_000,
+): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`);

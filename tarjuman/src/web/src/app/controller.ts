@@ -114,7 +114,9 @@ class Controller implements AppController {
         onUtteranceStart: (utteranceId, atEpochMs) => {
           if (id === 'monitor') return;
           patchEntry(utteranceId, (entry) =>
-            entry.latencyMs === null ? { latencyMs: Math.max(0, Math.round(atEpochMs - entry.createdAt)) } : {},
+            entry.latencyMs === null
+              ? { latencyMs: Math.max(0, Math.round(atEpochMs - entry.createdAt)) }
+              : {},
           );
         },
       });
@@ -250,7 +252,10 @@ class Controller implements AppController {
     });
     if (message.code === 'unconfigured' && !this.hintedAboutKeys) {
       this.hintedAboutKeys = true;
-      pushNotice('warning', `${STAGE_LABEL[message.stage]} has no provider yet. Open Settings and add a free API key.`);
+      pushNotice(
+        'warning',
+        `${STAGE_LABEL[message.stage]} has no provider yet. Open Settings and add a free API key.`,
+      );
     }
   }
 
@@ -389,7 +394,10 @@ class Controller implements AppController {
     const s = this.settings;
     if (channel === 'outgoing') {
       // With loudspeakers the translated voice reaches the microphone; let the browser cancel it.
-      return { kind: 'microphone', opening: openMicrophone(s.outgoing.micDeviceId, { echoCancellation: !s.headphones }) };
+      return {
+        kind: 'microphone',
+        opening: openMicrophone(s.outgoing.micDeviceId, { echoCancellation: !s.headphones }),
+      };
     }
     if (s.incoming.sourceKind === 'display') {
       return {
@@ -447,7 +455,13 @@ class Controller implements AppController {
   }
 
   private captureFailed(channel: ChannelId, message: string): void {
-    patchChannel(channel, { capture: 'error', captureError: message, sourceLabel: null, speaking: false, level: 0 });
+    patchChannel(channel, {
+      capture: 'error',
+      captureError: message,
+      sourceLabel: null,
+      speaking: false,
+      level: 0,
+    });
     pushNotice('error', message);
   }
 
@@ -592,7 +606,8 @@ class Controller implements AppController {
     this.buses.outgoing.setVolume(next.outgoing.volume);
     this.buses.incoming.setVolume(next.incoming.volume);
     this.buses.monitor.setVolume(next.outgoing.monitorGain);
-    if (next.outgoing.monitorGain > 0 && previous.outgoing.monitorGain === 0) void this.buses.monitor.unlock();
+    if (next.outgoing.monitorGain > 0 && previous.outgoing.monitorGain === 0)
+      void this.buses.monitor.unlock();
 
     if (previous.vadSensitivity !== next.vadSensitivity || previous.pauseMs !== next.pauseMs) {
       const options = segmenterOptions(next.vadSensitivity, next.pauseMs);

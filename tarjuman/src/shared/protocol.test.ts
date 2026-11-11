@@ -25,7 +25,11 @@ const audioHeader: AudioUtteranceHeader = {
 };
 
 /** Build a raw frame from arbitrary header bytes, bypassing the encoder's own checks. */
-function rawFrame(headerBytes: Uint8Array, declaredLength = headerBytes.byteLength, payload = new Uint8Array(0)) {
+function rawFrame(
+  headerBytes: Uint8Array,
+  declaredLength = headerBytes.byteLength,
+  payload = new Uint8Array(0),
+) {
   const frame = new Uint8Array(4 + headerBytes.byteLength + payload.byteLength);
   new DataView(frame.buffer).setUint32(0, declaredLength, false);
   frame.set(headerBytes, 4);
@@ -98,7 +102,9 @@ describe('binary framing', () => {
   });
 
   it('rejects a zero header length', () => {
-    expect(() => decodeBinaryFrame(new Uint8Array([0, 0, 0, 0, 1, 2]))).toThrow(/invalid binary frame header length 0/);
+    expect(() => decodeBinaryFrame(new Uint8Array([0, 0, 0, 0, 1, 2]))).toThrow(
+      /invalid binary frame header length 0/,
+    );
   });
 
   it('rejects a declared header length above the cap without reading further', () => {
@@ -133,7 +139,9 @@ describe('binary framing', () => {
 
 describe('floatToPcm16', () => {
   it('maps the full float range onto the full 16-bit range', () => {
-    expect([...floatToPcm16(new Float32Array([0, 1, -1, 0.5, -0.5]))]).toEqual([0, 32767, -32768, 16384, -16384]);
+    expect([...floatToPcm16(new Float32Array([0, 1, -1, 0.5, -0.5]))]).toEqual([
+      0, 32767, -32768, 16384, -16384,
+    ]);
   });
 
   it('clips samples outside [-1, 1] instead of wrapping around', () => {

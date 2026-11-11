@@ -10,7 +10,11 @@ export interface SelectOption {
  * browser reveals device names the entries are numbered instead. A saved device that is
  * no longer plugged in stays selectable so the select never shows a wrong value.
  */
-export function deviceOptions(devices: readonly AudioDevice[], selected: string, unnamed: string): SelectOption[] {
+export function deviceOptions(
+  devices: readonly AudioDevice[],
+  selected: string,
+  unnamed: string,
+): SelectOption[] {
   const options: SelectOption[] = [{ value: '', label: 'System default' }];
   const seen = new Set<string>(['']);
   devices.forEach((device, index) => {

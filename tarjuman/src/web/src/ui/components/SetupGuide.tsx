@@ -23,11 +23,22 @@ function Step({ title, done, children }: { title: string; done?: boolean; childr
 }
 
 /** Step-by-step wiring of Tarjuman into a Microsoft Teams call, with live checks. */
-export function SetupGuide({ open, onClose, overlay }: { open: boolean; onClose: () => void; overlay?: ReactNode }) {
+export function SetupGuide({
+  open,
+  onClose,
+  overlay,
+}: {
+  open: boolean;
+  onClose: () => void;
+  overlay?: ReactNode;
+}) {
   const devices = useAppStore((state) => state.devices);
   const sinkId = useAppStore((state) => state.settings.outgoing.sinkId);
   const captures = useAppStore(
-    useShallow((state) => ({ outgoing: state.channels.outgoing.capture, incoming: state.channels.incoming.capture })),
+    useShallow((state) => ({
+      outgoing: state.channels.outgoing.capture,
+      incoming: state.channels.incoming.capture,
+    })),
   );
 
   const virtualOutputs = devices.outputs.filter((device) => device.virtual);
@@ -45,7 +56,8 @@ export function SetupGuide({ open, onClose, overlay }: { open: boolean; onClose:
       <ol className="steps">
         <Step title="Install a virtual audio cable" done={virtualOutputs.length > 0}>
           <p className="muted">
-            A virtual cable is a pretend sound device: what Tarjuman plays into it, Teams hears as a microphone.
+            A virtual cable is a pretend sound device: what Tarjuman plays into it, Teams hears as a
+            microphone.
           </p>
           <ul>
             <li>
@@ -55,7 +67,8 @@ export function SetupGuide({ open, onClose, overlay }: { open: boolean; onClose:
               <strong>macOS:</strong> BlackHole 2ch (<span className="kbd">brew install blackhole-2ch</span>).
             </li>
             <li>
-              <strong>Linux:</strong> a PipeWire or PulseAudio null sink with a remap source (see the documentation).
+              <strong>Linux:</strong> a PipeWire or PulseAudio null sink with a remap source (see the
+              documentation).
             </li>
           </ul>
           <div className="step__actions">
@@ -67,11 +80,19 @@ export function SetupGuide({ open, onClose, overlay }: { open: boolean; onClose:
                   : 'No virtual cable found yet.'}
             </span>
             {!devices.labelsAvailable ? (
-              <button type="button" className="button button--small" onClick={() => void controller().unlockDeviceLabels()}>
+              <button
+                type="button"
+                className="button button--small"
+                onClick={() => void controller().unlockDeviceLabels()}
+              >
                 Show device names
               </button>
             ) : (
-              <button type="button" className="button button--small" onClick={() => void controller().refreshDevices()}>
+              <button
+                type="button"
+                className="button button--small"
+                onClick={() => void controller().refreshDevices()}
+              >
                 <RefreshCw size={13} aria-hidden="true" /> Refresh devices
               </button>
             )}
@@ -100,41 +121,53 @@ export function SetupGuide({ open, onClose, overlay }: { open: boolean; onClose:
           <p className="muted">In Teams, open Settings → Devices and set:</p>
           <ul>
             <li>
-              <strong>Microphone:</strong> the other end of the cable — "CABLE Output" on Windows, "BlackHole 2ch" on
-              macOS.
+              <strong>Microphone:</strong> the other end of the cable — "CABLE Output" on Windows, "BlackHole
+              2ch" on macOS.
             </li>
             <li>
-              <strong>Noise suppression:</strong> Low or Off, and turn Voice isolation off. Otherwise Teams may cut
-              the synthetic voice.
+              <strong>Noise suppression:</strong> Low or Off, and turn Voice isolation off. Otherwise Teams
+              may cut the synthetic voice.
             </li>
           </ul>
           <div className="step__actions">
             {/* Direct call in the click handler: audio may only start from a user action. */}
-            <button type="button" className="button button--small" onClick={() => void controller().playTestPhrase('outgoing')}>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => void controller().playTestPhrase('outgoing')}
+            >
               Play a test phrase
             </button>
-            <span className="muted small">Watch the microphone level in Teams move ("Make a test call").</span>
+            <span className="muted small">
+              Watch the microphone level in Teams move ("Make a test call").
+            </span>
           </div>
         </Step>
 
         <Step title="Hear the other side in your language" done={captures.incoming === 'capturing'}>
-          <p className="muted">Wear headphones, so the translated voice is not picked up by your microphone.</p>
+          <p className="muted">
+            Wear headphones, so the translated voice is not picked up by your microphone.
+          </p>
           <ul>
             <li>
-              <strong>Teams in a browser tab (simplest):</strong> press "Capture their audio", choose the Teams tab
-              and tick "Also share tab audio".
+              <strong>Teams in a browser tab (simplest):</strong> press "Capture their audio", choose the
+              Teams tab and tick "Also share tab audio".
             </li>
             <li>
-              <strong>Teams desktop app on Windows:</strong> choose "Entire screen" and tick "Also share system
-              audio".
+              <strong>Teams desktop app on Windows:</strong> choose "Entire screen" and tick "Also share
+              system audio".
             </li>
             <li>
-              <strong>Any system, most reliable:</strong> set the Teams speaker to a second virtual cable and select
-              it under "Audio device" in the "They speak" panel.
+              <strong>Any system, most reliable:</strong> set the Teams speaker to a second virtual cable and
+              select it under "Audio device" in the "They speak" panel.
             </li>
           </ul>
           <div className="step__actions">
-            <button type="button" className="button button--small" onClick={() => void controller().playTestPhrase('incoming')}>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => void controller().playTestPhrase('incoming')}
+            >
               Play a test phrase
             </button>
             <span className="muted small">You should hear it in your headphones.</span>
@@ -146,7 +179,8 @@ export function SetupGuide({ open, onClose, overlay }: { open: boolean; onClose:
           done={captures.outgoing === 'capturing' && captures.incoming === 'capturing'}
         >
           <p className="muted">
-            Speak in complete sentences and pause briefly between them: each sentence is translated when you pause.
+            Speak in complete sentences and pause briefly between them: each sentence is translated when you
+            pause.
           </p>
           <div className="step__actions">
             <button

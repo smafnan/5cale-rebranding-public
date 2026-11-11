@@ -76,7 +76,9 @@ function KeyCard({
       </div>
       <p className="muted small">{status.description}</p>
       {status.source === 'env' ? (
-        <p className="field__note">This key comes from the server's environment and cannot be changed here.</p>
+        <p className="field__note">
+          This key comes from the server's environment and cannot be changed here.
+        </p>
       ) : (
         <form
           className="row"
@@ -98,11 +100,20 @@ function KeyCard({
               onChange={(event) => setValue(event.target.value)}
             />
           </div>
-          <button type="submit" className="button button--primary" disabled={!writable || busy || !value.trim()}>
+          <button
+            type="submit"
+            className="button button--primary"
+            disabled={!writable || busy || !value.trim()}
+          >
             {busy ? <Spinner /> : null} Save
           </button>
           {status.source === 'file' ? (
-            <button type="button" className="button" disabled={!writable || busy} onClick={() => void submit(null)}>
+            <button
+              type="button"
+              className="button"
+              disabled={!writable || busy}
+              onClick={() => void submit(null)}
+            >
               Remove
             </button>
           ) : null}
@@ -209,8 +220,8 @@ function KeysTab() {
   return (
     <div className="stack">
       <p className="muted">
-        Tarjuman uses free tiers of these services. Keys are stored on the computer that runs the Tarjuman server
-        and are never sent to the browser again.
+        Tarjuman uses free tiers of these services. Keys are stored on the computer that runs the Tarjuman
+        server and are never sent to the browser again.
       </p>
       {!keys.writable ? (
         <p className="field__note field__note--warn">
@@ -297,7 +308,10 @@ function LanguagesTab() {
   const session = useAppStore((state) => state.settings.session);
   const mine = session.channels.outgoing.sourceLang;
   const theirs = session.channels.outgoing.targetLang;
-  const options = LANG_CODES.map((code) => ({ value: code, label: `${LANGUAGES[code].name} · ${LANGUAGES[code].nativeName}` }));
+  const options = LANG_CODES.map((code) => ({
+    value: code,
+    label: `${LANGUAGES[code].name} · ${LANGUAGES[code].nativeName}`,
+  }));
 
   /** Both channels always mirror each other: what I speak is what they hear translated, and vice versa. */
   const setPair = (nextMine: LangCode, nextTheirs: LangCode) => {
@@ -385,9 +399,13 @@ function LanguagesTab() {
           maxLength={MAX_MEETING_CONTEXT_CHARS}
           placeholder="For example: weekly planning call of a software team; we discuss releases, tickets and deadlines."
           value={session.meetingContext}
-          onChange={(event) => controller().updateSettings({ session: { meetingContext: event.target.value } })}
+          onChange={(event) =>
+            controller().updateSettings({ session: { meetingContext: event.target.value } })
+          }
         />
-        <p className="field__note">One or two sentences about the meeting help the translator pick the right terms.</p>
+        <p className="field__note">
+          One or two sentences about the meeting help the translator pick the right terms.
+        </p>
       </div>
 
       <GlossaryEditor />
@@ -420,7 +438,9 @@ function AudioTab() {
         ]}
         onChange={(vadSensitivity) => update({ vadSensitivity })}
       />
-      <p className="field__note">Low ignores background voices in a noisy room; High also catches quiet or distant speakers.</p>
+      <p className="field__note">
+        Low ignores background voices in a noisy room; High also catches quiet or distant speakers.
+      </p>
       <Slider
         label="Pause that ends a sentence"
         value={settings.pauseMs}

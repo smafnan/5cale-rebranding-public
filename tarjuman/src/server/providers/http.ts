@@ -33,7 +33,11 @@ function classifyStatus(status: number): ProviderErrorKind {
  * Understands `Retry-After-Ms`, `Retry-After` (seconds or HTTP date) and the
  * `"retryDelay": "34s"` hint that Google APIs put in the error body.
  */
-export function parseRetryAfter(headers: Headers, body: string, now: number = Date.now()): number | undefined {
+export function parseRetryAfter(
+  headers: Headers,
+  body: string,
+  now: number = Date.now(),
+): number | undefined {
   // Groq additionally sends the wait in milliseconds; prefer the more precise value.
   const millis = Number(headers.get('retry-after-ms')?.trim() || Number.NaN);
   if (Number.isFinite(millis) && millis >= 0) return Math.ceil(millis);
@@ -94,7 +98,8 @@ export async function httpRequest(options: HttpRequestOptions): Promise<Response
     });
   } catch (error) {
     if (signal.aborted) throw new ProviderError(providerId, 'aborted', 'request aborted', { cause: error });
-    const reason = error instanceof Error ? (error.cause instanceof Error ? error.cause.message : error.message) : '';
+    const reason =
+      error instanceof Error ? (error.cause instanceof Error ? error.cause.message : error.message) : '';
     throw new ProviderError(providerId, 'unavailable', `network error${reason ? `: ${reason}` : ''}`, {
       cause: error,
     });

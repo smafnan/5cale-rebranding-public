@@ -92,7 +92,8 @@ function sanitizeChannel(input: unknown, fallback: ChannelSettings): ChannelSett
   return {
     sourceLang,
     targetLang,
-    voice: typeof raw.voice === 'string' && raw.voice.length > 0 && raw.voice.length <= 80 ? raw.voice : 'auto',
+    voice:
+      typeof raw.voice === 'string' && raw.voice.length > 0 && raw.voice.length <= 80 ? raw.voice : 'auto',
     speak: typeof raw.speak === 'boolean' ? raw.speak : fallback.speak,
     speechRate: clamp(rate, SPEECH_RATE_MIN, SPEECH_RATE_MAX),
   };
@@ -136,6 +137,8 @@ export function sanitizeSessionSettings(input: unknown): SessionSettings {
     formality: raw.formality === 'informal' ? 'informal' : 'formal',
     glossary,
     meetingContext:
-      typeof raw.meetingContext === 'string' ? raw.meetingContext.trim().slice(0, MAX_MEETING_CONTEXT_CHARS) : '',
+      typeof raw.meetingContext === 'string'
+        ? raw.meetingContext.trim().slice(0, MAX_MEETING_CONTEXT_CHARS)
+        : '',
   };
 }

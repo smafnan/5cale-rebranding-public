@@ -35,7 +35,9 @@ export function summarizeChain(chain: readonly ProviderStatus[]): ChainSummary {
   if (ready) return { tone: 'ok', active: ready, cooldownUntil: null };
   const cooling = ordered.filter((provider) => provider.state === 'cooldown');
   if (cooling.length > 0) {
-    const ends = cooling.flatMap((provider) => (provider.cooldownUntil === undefined ? [] : [provider.cooldownUntil]));
+    const ends = cooling.flatMap((provider) =>
+      provider.cooldownUntil === undefined ? [] : [provider.cooldownUntil],
+    );
     return { tone: 'warn', active: null, cooldownUntil: ends.length > 0 ? Math.min(...ends) : null };
   }
   return { tone: 'danger', active: null, cooldownUntil: null };

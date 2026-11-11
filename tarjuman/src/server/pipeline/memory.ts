@@ -16,7 +16,10 @@ export class ConversationMemory {
   add(turn: ContextTurn): void {
     const text = turn.text.trim();
     if (!text) return;
-    this.turns.push({ ...turn, text: text.length > this.maxTurnChars ? `${text.slice(0, this.maxTurnChars)}…` : text });
+    this.turns.push({
+      ...turn,
+      text: text.length > this.maxTurnChars ? `${text.slice(0, this.maxTurnChars)}…` : text,
+    });
     if (this.turns.length > this.maxTurns) this.turns.splice(0, this.turns.length - this.maxTurns);
   }
 

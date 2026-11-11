@@ -78,7 +78,11 @@ function Activity({ channel }: { channel: ChannelId }) {
       {queueMs > 1500 ? (
         <span className="activity__item">
           {formatSeconds(queueMs)} of speech queued
-          <button type="button" className="button button--small" onClick={() => controller().flushPlayback(channel)}>
+          <button
+            type="button"
+            className="button button--small"
+            onClick={() => controller().flushPlayback(channel)}
+          >
             Skip
           </button>
         </span>
@@ -195,7 +199,9 @@ function OutgoingControls() {
         badge={chosenSink?.virtual ? <span className="badge badge--ok">virtual cable</span> : undefined}
         note={
           !sinkOk ? (
-            <span className="field__note--danger">Could not use this output; playing on the default device.</span>
+            <span className="field__note--danger">
+              Could not use this output; playing on the default device.
+            </span>
           ) : chosenSink?.virtual ? undefined : (
             <span className="field__note--warn">
               The other side only hears the translation if this is a virtual cable that Teams uses as its
@@ -289,7 +295,9 @@ function IncomingControls() {
         disabled={!devices.canChooseOutput}
         note={
           sinkOk ? undefined : (
-            <span className="field__note--danger">Could not use this output; playing on the default device.</span>
+            <span className="field__note--danger">
+              Could not use this output; playing on the default device.
+            </span>
           )
         }
       />
@@ -364,7 +372,13 @@ export function ChannelPanel({ channel }: { channel: ChannelId }) {
           // sharing dialog and audio playback in response to a user action.
           onClick={() => (live ? controller().stopChannel(channel) : void controller().startChannel(channel))}
         >
-          {capture === 'starting' ? <Spinner /> : live ? <Square size={15} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}
+          {capture === 'starting' ? (
+            <Spinner />
+          ) : live ? (
+            <Square size={15} aria-hidden="true" />
+          ) : (
+            <Icon size={16} aria-hidden="true" />
+          )}
           {live ? copy.stop : copy.start}
         </button>
         <CaptureStatus channel={channel} />
@@ -377,7 +391,11 @@ export function ChannelPanel({ channel }: { channel: ChannelId }) {
       {channel === 'outgoing' ? <OutgoingControls /> : <IncomingControls />}
 
       {!labelsAvailable ? (
-        <button type="button" className="button button--small" onClick={() => void controller().unlockDeviceLabels()}>
+        <button
+          type="button"
+          className="button button--small"
+          onClick={() => void controller().unlockDeviceLabels()}
+        >
           Show device names
         </button>
       ) : null}

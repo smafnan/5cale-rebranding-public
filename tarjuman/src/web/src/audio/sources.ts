@@ -37,7 +37,10 @@ function trackLabel(stream: MediaStream, fallback: string): string {
  * offices, not studios). Echo cancellation is only needed when the translated voice comes
  * out of loudspeakers next to the microphone.
  */
-export async function openMicrophone(deviceId: string, options: { echoCancellation: boolean }): Promise<OpenedSource> {
+export async function openMicrophone(
+  deviceId: string,
+  options: { echoCancellation: boolean },
+): Promise<OpenedSource> {
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: {
       ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
@@ -120,7 +123,9 @@ const SURFACE_LABEL = {
  * chosen volume instead). For a whole screen the same flag would mute the entire output
  * device, so in that mode the dialog only offers browser tabs.
  */
-export async function openDisplayAudio(options: { suppressLocalAudioPlayback: boolean }): Promise<OpenedSource> {
+export async function openDisplayAudio(options: {
+  suppressLocalAudioPlayback: boolean;
+}): Promise<OpenedSource> {
   const tabOnly = options.suppressLocalAudioPlayback;
   const request: DisplayOptions = {
     video: { frameRate: { max: 1 }, ...(tabOnly ? { displaySurface: 'browser' } : {}) },
@@ -155,7 +160,10 @@ export async function openDisplayAudio(options: { suppressLocalAudioPlayback: bo
   }
 
   const surfaceSetting = stream.getVideoTracks()[0]?.getSettings().displaySurface;
-  const surface = surfaceSetting === 'browser' || surfaceSetting === 'window' || surfaceSetting === 'monitor' ? surfaceSetting : null;
+  const surface =
+    surfaceSetting === 'browser' || surfaceSetting === 'window' || surfaceSetting === 'monitor'
+      ? surfaceSetting
+      : null;
   const settings = audioTrack.getSettings() as DisplayTrackSettings;
 
   return {
@@ -174,7 +182,8 @@ export async function openDisplayAudio(options: { suppressLocalAudioPlayback: bo
 export function describeSourceError(error: unknown, kind: SourceKind): string {
   if (error instanceof SourceError) return error.message;
   const name = error instanceof DOMException || error instanceof Error ? error.name : '';
-  const what = kind === 'display' ? 'screen or tab sharing' : kind === 'device' ? 'the audio device' : 'the microphone';
+  const what =
+    kind === 'display' ? 'screen or tab sharing' : kind === 'device' ? 'the audio device' : 'the microphone';
   switch (name) {
     case 'NotAllowedError':
     case 'SecurityError':

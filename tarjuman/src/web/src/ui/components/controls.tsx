@@ -143,7 +143,16 @@ interface SelectFieldProps {
   className?: string;
 }
 
-export function SelectField({ label, value, options, onChange, badge, note, disabled, className }: SelectFieldProps) {
+export function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+  badge,
+  note,
+  disabled,
+  className,
+}: SelectFieldProps) {
   const id = useId();
   const noteId = useId();
   return (

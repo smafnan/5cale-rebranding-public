@@ -45,7 +45,9 @@ export function Composer() {
         value={text}
         disabled={!connected}
         aria-label={`Type in ${LANGUAGES[sourceLang].name}`}
-        placeholder={connected ? `Type in ${LANGUAGES[sourceLang].name} instead of speaking…` : 'Not connected'}
+        placeholder={
+          connected ? `Type in ${LANGUAGES[sourceLang].name} instead of speaking…` : 'Not connected'
+        }
         onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {

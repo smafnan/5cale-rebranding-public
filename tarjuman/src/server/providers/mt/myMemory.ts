@@ -44,7 +44,12 @@ export class MyMemoryProvider implements MtProvider {
     return true;
   }
 
-  private async translateOne(text: string, source: LangCode, target: LangCode, signal: AbortSignal): Promise<string> {
+  private async translateOne(
+    text: string,
+    source: LangCode,
+    target: LangCode,
+    signal: AbortSignal,
+  ): Promise<string> {
     if (new TextEncoder().encode(text).byteLength > MAX_QUERY_BYTES) {
       throw new ProviderError(this.id, 'bad_request', 'text is too long for MyMemory (500 bytes)');
     }
@@ -65,7 +70,9 @@ export class MyMemoryProvider implements MtProvider {
 
     // MyMemory reports quota problems with HTTP 200 and a status / message in the body.
     if (json.quotaFinished || status === 429 || /QUOTA|LIMIT/i.test(translated.slice(0, 60))) {
-      throw new ProviderError(this.id, 'rate_limit', 'MyMemory daily quota is used up', { retryAfterMs: 600_000 });
+      throw new ProviderError(this.id, 'rate_limit', 'MyMemory daily quota is used up', {
+        retryAfterMs: 600_000,
+      });
     }
     if (status !== 200 || !translated) {
       throw new ProviderError(this.id, 'bad_response', json.responseDetails || `MyMemory status ${status}`);
@@ -79,7 +86,8 @@ export class MyMemoryProvider implements MtProvider {
   async translate(request: MtRequest): Promise<MtResult> {
     const entries = await Promise.all(
       request.targetLangs.map(
-        async (lang) => [lang, await this.translateOne(request.text, request.sourceLang, lang, request.signal)] as const,
+        async (lang) =>
+          [lang, await this.translateOne(request.text, request.sourceLang, lang, request.signal)] as const,
       ),
     );
     return { translations: Object.fromEntries(entries) };

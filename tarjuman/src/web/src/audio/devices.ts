@@ -38,7 +38,8 @@ export function detectCapabilities(): Capabilities {
   const mobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
   return {
     canChooseOutput: contextSink || elementSink,
-    canCaptureDisplayAudio: typeof navigator.mediaDevices?.getDisplayMedia === 'function' && chromium && !mobile,
+    canCaptureDisplayAudio:
+      typeof navigator.mediaDevices?.getDisplayMedia === 'function' && chromium && !mobile,
   };
 }
 
@@ -49,8 +50,12 @@ export async function listDevices(): Promise<DeviceState> {
   }
   const all = await navigator.mediaDevices.enumerateDevices();
   const real = all.filter((info) => info.deviceId && !PSEUDO_DEVICE_IDS.has(info.deviceId));
-  const inputs = real.filter((info) => info.kind === 'audioinput').map((info, i) => toAudioDevice(info, i, 'Microphone'));
-  const outputs = real.filter((info) => info.kind === 'audiooutput').map((info, i) => toAudioDevice(info, i, 'Speaker'));
+  const inputs = real
+    .filter((info) => info.kind === 'audioinput')
+    .map((info, i) => toAudioDevice(info, i, 'Microphone'));
+  const outputs = real
+    .filter((info) => info.kind === 'audiooutput')
+    .map((info, i) => toAudioDevice(info, i, 'Speaker'));
   return {
     inputs,
     outputs,

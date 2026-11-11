@@ -94,9 +94,18 @@ const WEAK_PHRASES: Record<LangCode, Set<string>> = {
     ].map(normalizeForMatch),
   ),
   en: new Set(
-    ['Thank you', 'Thanks', 'Thank you very much', 'Bye', 'Bye bye', 'You', 'Okay', 'So', 'Music', 'The end'].map(
-      normalizeForMatch,
-    ),
+    [
+      'Thank you',
+      'Thanks',
+      'Thank you very much',
+      'Bye',
+      'Bye bye',
+      'You',
+      'Okay',
+      'So',
+      'Music',
+      'The end',
+    ].map(normalizeForMatch),
   ),
   ur: new Set(['شکریہ', 'بہت شکریہ', 'جی', 'ہاں', 'اچھا', 'ٹھیک ہے', 'موسیقی'].map(normalizeForMatch)),
 };
@@ -181,7 +190,8 @@ export function judgeTranscript(text: string, evidence: TranscriptEvidence): Tra
   }
 
   for (const pattern of ALWAYS_ARTEFACT) {
-    if (pattern.test(normalized)) return { keep: false, reason: 'hallucination', detail: 'known recognition artefact' };
+    if (pattern.test(normalized))
+      return { keep: false, reason: 'hallucination', detail: 'known recognition artefact' };
   }
 
   // Whisper sometimes echoes the prompt it was given instead of transcribing.

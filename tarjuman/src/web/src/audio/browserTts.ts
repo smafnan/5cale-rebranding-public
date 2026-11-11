@@ -9,7 +9,12 @@ function findVoice(locale: string): SpeechSynthesisVoice | undefined {
   const voices = globalThis.speechSynthesis?.getVoices() ?? [];
   const language = locale.split('-')[0]?.toLowerCase() ?? '';
   const sameLocale = voices.find((voice) => voice.lang.toLowerCase() === locale.toLowerCase());
-  return sameLocale ?? voices.find((voice) => voice.lang.toLowerCase().startsWith(`${language}-`) || voice.lang.toLowerCase() === language);
+  return (
+    sameLocale ??
+    voices.find(
+      (voice) => voice.lang.toLowerCase().startsWith(`${language}-`) || voice.lang.toLowerCase() === language,
+    )
+  );
 }
 
 /** True when the browser has a voice for this locale's language. */

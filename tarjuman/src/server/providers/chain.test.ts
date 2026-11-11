@@ -8,7 +8,10 @@ interface FakeProvider extends ProviderBase {
   configured: boolean;
 }
 
-function provider(id: string, options: Partial<Omit<FakeProvider, 'id' | 'isConfigured'>> = {}): FakeProvider {
+function provider(
+  id: string,
+  options: Partial<Omit<FakeProvider, 'id' | 'isConfigured'>> = {},
+): FakeProvider {
   return {
     id,
     kind: 'mt',
@@ -23,8 +26,14 @@ function provider(id: string, options: Partial<Omit<FakeProvider, 'id' | 'isConf
   };
 }
 
-function fail(p: ProviderBase, kind: ProviderErrorKind, extra: { retryAfterMs?: number; message?: string } = {}) {
-  return new ProviderError(p.id, kind, extra.message ?? `${p.id} ${kind}`, { retryAfterMs: extra.retryAfterMs });
+function fail(
+  p: ProviderBase,
+  kind: ProviderErrorKind,
+  extra: { retryAfterMs?: number; message?: string } = {},
+) {
+  return new ProviderError(p.id, kind, extra.message ?? `${p.id} ${kind}`, {
+    retryAfterMs: extra.retryAfterMs,
+  });
 }
 
 /** A clock the test moves by hand, so cooldown arithmetic is exact. */
@@ -62,12 +71,20 @@ function controllable() {
   const operation = (p: FakeProvider, signal: AbortSignal): Promise<string> => {
     const result = deferred<string>();
     started.push({ id: p.id, signal, result });
-    signal.addEventListener('abort', () => result.reject(new ProviderError(p.id, 'aborted', 'request aborted')), {
-      once: true,
-    });
+    signal.addEventListener(
+      'abort',
+      () => result.reject(new ProviderError(p.id, 'aborted', 'request aborted')),
+      {
+        once: true,
+      },
+    );
     return result.promise;
   };
-  const call = (id: string) => must(started.find((entry) => entry.id === id), `a call to ${id}`);
+  const call = (id: string) =>
+    must(
+      started.find((entry) => entry.id === id),
+      `a call to ${id}`,
+    );
   return { started, operation, call, ids: () => started.map((entry) => entry.id) };
 }
 
@@ -139,7 +156,12 @@ describe('FallbackChain: order and selection', () => {
 
   it('orders by rank and keeps the configured order among equal ranks', async () => {
     const chain = new FallbackChain('mt', [provider('a'), provider('b'), provider('c'), provider('d')]);
-    const { calls, operation } = script({ a: ['unavailable'], b: ['unavailable'], c: ['unavailable'], d: ['unavailable'] });
+    const { calls, operation } = script({
+      a: ['unavailable'],
+      b: ['unavailable'],
+      c: ['unavailable'],
+      d: ['unavailable'],
+    });
     const rank = (p: FakeProvider) => (p.id === 'a' ? 2 : p.id === 'd' ? 0 : 1);
 
     await expect(chain.run(operation, opts({ rank }))).rejects.toBeInstanceOf(ChainExhaustedError);
@@ -210,7 +232,9 @@ describe('FallbackChain: health', () => {
     const time = clock();
     // A single provider keeps being tried even while resting, which lets the failures pile up.
     const chain = new FallbackChain('mt', [provider('a')], { now: time.now });
-    const { operation } = script({ a: ['unavailable', 'timeout', 'bad_response', 'unavailable', 'unavailable', 'unavailable'] });
+    const { operation } = script({
+      a: ['unavailable', 'timeout', 'bad_response', 'unavailable', 'unavailable', 'unavailable'],
+    });
 
     const cooldowns: number[] = [];
     for (let i = 0; i < 6; i++) {
@@ -241,7 +265,9 @@ describe('FallbackChain: health', () => {
     const time = clock();
     const a = provider('a');
     const chain = new FallbackChain('mt', [a, provider('b')], { now: time.now });
-    const { calls, operation } = script({ a: [fail(a, 'auth', { message: 'HTTP 401 — invalid key' }), 'ok'] });
+    const { calls, operation } = script({
+      a: [fail(a, 'auth', { message: 'HTTP 401 — invalid key' }), 'ok'],
+    });
 
     await chain.run(operation, opts());
     expect(chain.status()[0]).toMatchObject({ state: 'disabled', detail: 'HTTP 401 — invalid key' });
@@ -284,7 +310,9 @@ describe('FallbackChain: health', () => {
 
   it('skips a provider that has used up its per-minute budget instead of provoking a 429', async () => {
     const time = clock();
-    const chain = new FallbackChain('mt', [provider('a', { requestsPerMinute: 2 }), provider('b')], { now: time.now });
+    const chain = new FallbackChain('mt', [provider('a', { requestsPerMinute: 2 }), provider('b')], {
+      now: time.now,
+    });
     const { calls, operation } = script({});
 
     await chain.run(operation, opts());
@@ -305,7 +333,9 @@ describe('FallbackChain: health', () => {
 
   it('counts failed requests against the budget too', async () => {
     const time = clock();
-    const chain = new FallbackChain('mt', [provider('a', { requestsPerMinute: 1 }), provider('b')], { now: time.now });
+    const chain = new FallbackChain('mt', [provider('a', { requestsPerMinute: 1 }), provider('b')], {
+      now: time.now,
+    });
     const { calls, operation } = script({ a: ['bad_request', 'ok'] });
 
     await chain.run(operation, opts());
@@ -375,7 +405,10 @@ describe('FallbackChain: health', () => {
 
 describe('FallbackChain: errors', () => {
   it('throws NoProviderError when nothing is configured', async () => {
-    const chain = new FallbackChain('stt', [provider('a', { configured: false }), provider('b', { configured: false })]);
+    const chain = new FallbackChain('stt', [
+      provider('a', { configured: false }),
+      provider('b', { configured: false }),
+    ]);
     const { calls, operation } = script({});
 
     const error = await chain.run(operation, opts()).catch((e: unknown) => e);
@@ -390,7 +423,9 @@ describe('FallbackChain: errors', () => {
   it('throws NoProviderError with a different explanation when the filter excludes every provider', async () => {
     const chain = new FallbackChain('tts', [provider('a'), provider('b')]);
 
-    const error = await chain.run(script({}).operation, opts({ filter: () => false })).catch((e: unknown) => e);
+    const error = await chain
+      .run(script({}).operation, opts({ filter: () => false }))
+      .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(NoProviderError);
     expect(error).toMatchObject({ code: 'unconfigured', kind: 'tts' });
@@ -466,11 +501,17 @@ describe('FallbackChain: deadlines and aborts', () => {
   });
 
   it('reports "timeout" when every provider runs into its deadline', async () => {
-    const chain = new FallbackChain('mt', [provider('a', { timeoutMs: 15 }), provider('b', { timeoutMs: 15 })]);
+    const chain = new FallbackChain('mt', [
+      provider('a', { timeoutMs: 15 }),
+      provider('b', { timeoutMs: 15 }),
+    ]);
     const operation = (_p: FakeProvider, signal: AbortSignal): Promise<string> =>
       new Promise((_, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))));
 
-    await expect(chain.run(operation, opts())).rejects.toMatchObject({ name: 'ChainExhaustedError', code: 'timeout' });
+    await expect(chain.run(operation, opts())).rejects.toMatchObject({
+      name: 'ChainExhaustedError',
+      code: 'timeout',
+    });
   });
 
   it('rejects at once with AbortedError when the signal is already aborted', async () => {
@@ -489,7 +530,10 @@ describe('FallbackChain: deadlines and aborts', () => {
   it('aborts the running provider when the caller aborts, without a health penalty', async () => {
     const time = clock();
     const notifications = vi.fn();
-    const chain = new FallbackChain('mt', [provider('a'), provider('b')], { now: time.now, onStatusChange: notifications });
+    const chain = new FallbackChain('mt', [provider('a'), provider('b')], {
+      now: time.now,
+      onStatusChange: notifications,
+    });
     const op = controllable();
     const controller = new AbortController();
 
@@ -518,10 +562,13 @@ describe('FallbackChain: deadlines and aborts', () => {
     const controller = new AbortController();
     const signals: AbortSignal[] = [];
 
-    const result = await chain.run(async (_p, signal) => {
-      signals.push(signal);
-      return 'done';
-    }, opts({ signal: controller.signal }));
+    const result = await chain.run(
+      async (_p, signal) => {
+        signals.push(signal);
+        return 'done';
+      },
+      opts({ signal: controller.signal }),
+    );
     controller.abort();
     await flushMicrotasks();
 
@@ -706,12 +753,31 @@ describe('FallbackChain: status reporting', () => {
       provider('d'),
     ];
     const chain = new FallbackChain('tts', [a, b, c, d], { now: time.now });
-    const { operation } = script({ b: ['auth'], c: [fail(c, 'rate_limit', { retryAfterMs: 7_000, message: 'slow down' })] });
+    const { operation } = script({
+      b: ['auth'],
+      c: [fail(c, 'rate_limit', { retryAfterMs: 7_000, message: 'slow down' })],
+    });
     await chain.run(operation, opts());
 
     expect(chain.status()).toEqual([
-      { id: 'a', kind: 'tts', label: 'Provider a', order: 0, requiresKey: true, state: 'unconfigured', detail: 'API key not set' },
-      { id: 'b', kind: 'tts', label: 'Provider b', order: 1, requiresKey: true, state: 'disabled', detail: 'b auth' },
+      {
+        id: 'a',
+        kind: 'tts',
+        label: 'Provider a',
+        order: 0,
+        requiresKey: true,
+        state: 'unconfigured',
+        detail: 'API key not set',
+      },
+      {
+        id: 'b',
+        kind: 'tts',
+        label: 'Provider b',
+        order: 1,
+        requiresKey: true,
+        state: 'disabled',
+        detail: 'b auth',
+      },
       {
         id: 'c',
         kind: 'tts',
@@ -722,7 +788,15 @@ describe('FallbackChain: status reporting', () => {
         detail: 'slow down',
         cooldownUntil: time.now() + 7_000,
       },
-      { id: 'd', kind: 'tts', label: 'Provider d', order: 3, requiresKey: true, state: 'ready', detail: undefined },
+      {
+        id: 'd',
+        kind: 'tts',
+        label: 'Provider d',
+        order: 3,
+        requiresKey: true,
+        state: 'ready',
+        detail: undefined,
+      },
     ]);
   });
 
@@ -740,7 +814,10 @@ describe('FallbackChain: status reporting', () => {
   it('notifies on failures, on recovery and on reset, but not on ordinary successes', async () => {
     const time = clock();
     const notifications = vi.fn();
-    const chain = new FallbackChain('mt', [provider('a'), provider('b')], { now: time.now, onStatusChange: notifications });
+    const chain = new FallbackChain('mt', [provider('a'), provider('b')], {
+      now: time.now,
+      onStatusChange: notifications,
+    });
     const { operation } = script({ a: ['ok', 'unavailable', 'ok'] });
 
     await chain.run(operation, opts());

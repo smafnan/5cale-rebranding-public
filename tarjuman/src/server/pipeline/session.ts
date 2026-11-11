@@ -266,7 +266,13 @@ export class InterpreterSession {
     const text = normalizeTranscript(rawText);
     if (!text) return this.emitDropped(id, channel, 'no_speech', 'empty text');
     if (text.length > LIMITS.maxTextChars) {
-      this.emitError(id, channel, 'mt', 'bad_request', `text is longer than ${LIMITS.maxTextChars} characters`);
+      this.emitError(
+        id,
+        channel,
+        'mt',
+        'bad_request',
+        `text is longer than ${LIMITS.maxTextChars} characters`,
+      );
       return;
     }
 
@@ -290,7 +296,8 @@ export class InterpreterSession {
   private async translate(
     utterance: Utterance,
     text: string,
-    fromRecognizer: { translations: Partial<Record<LangCode, string>> | undefined; provider: string } | undefined,
+    fromRecognizer:
+      { translations: Partial<Record<LangCode, string>> | undefined; provider: string } | undefined,
   ): Promise<void> {
     const { id, channel, job } = utterance;
     const speaker = channel === 'outgoing' ? 'me' : 'them';
@@ -328,7 +335,8 @@ export class InterpreterSession {
     }
 
     const spoken = translations[utterance.settings.targetLang];
-    if (!spoken) throw new StageFailure('mt', 'provider_failed', 'translation is missing the target language');
+    if (!spoken)
+      throw new StageFailure('mt', 'provider_failed', 'translation is missing the target language');
 
     utterance.timings.mtMs = ms;
     this.memory.add({ speaker, lang: job.sourceLang, text });
@@ -356,10 +364,13 @@ export class InterpreterSession {
     const startedAt = this.now();
 
     const synthesize = (chunk: string) => {
-      const pending = this.chains.tts.run((tts, signal) => tts.synthesize({ text: chunk, lang, voice, rate, signal }), {
-        signal: utterance.controller.signal,
-        filter: (tts) => tts.supportsLanguage(lang),
-      });
+      const pending = this.chains.tts.run(
+        (tts, signal) => tts.synthesize({ text: chunk, lang, voice, rate, signal }),
+        {
+          signal: utterance.controller.signal,
+          filter: (tts) => tts.supportsLanguage(lang),
+        },
+      );
       pending.catch(() => undefined);
       return pending;
     };
@@ -490,7 +501,13 @@ export class InterpreterSession {
     this.transport.send({ type: 'utterance.dropped', id, channel, reason, detail });
   }
 
-  private emitError(id: string, channel: ChannelId, stage: PipelineStage, code: ErrorCode, message: string): void {
+  private emitError(
+    id: string,
+    channel: ChannelId,
+    stage: PipelineStage,
+    code: ErrorCode,
+    message: string,
+  ): void {
     this.logger.warn({ id, channel, stage, code, message }, 'utterance failed');
     this.transport.send({ type: 'utterance.error', id, channel, stage, code, message });
   }

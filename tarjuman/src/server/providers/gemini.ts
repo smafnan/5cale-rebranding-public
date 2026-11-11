@@ -69,7 +69,9 @@ export interface GeminiCallOptions {
   fetchImpl?: typeof fetch;
 }
 
-export function buildGeminiBody(options: Pick<GeminiCallOptions, 'shape' | 'system' | 'userParts' | 'schema'>) {
+export function buildGeminiBody(
+  options: Pick<GeminiCallOptions, 'shape' | 'system' | 'userParts' | 'schema'>,
+) {
   const { shape, system, userParts, schema } = options;
   if (shape === 'bare') {
     return {
@@ -105,7 +107,8 @@ export async function geminiGenerate(options: GeminiCallOptions): Promise<string
   const json = await readJson<GeminiResponse>(providerId, response);
 
   const blockReason = json.promptFeedback?.blockReason;
-  if (blockReason) throw new ProviderError(providerId, 'bad_response', `request blocked by the model (${blockReason})`);
+  if (blockReason)
+    throw new ProviderError(providerId, 'bad_response', `request blocked by the model (${blockReason})`);
 
   const candidate = json.candidates?.[0];
   const reason = candidate?.finishReason;
@@ -119,7 +122,11 @@ export async function geminiGenerate(options: GeminiCallOptions): Promise<string
     .map((part) => part.text)
     .join('');
   if (!text.trim()) {
-    throw new ProviderError(providerId, 'bad_response', `model returned no text (${reason ?? 'no candidates'})`);
+    throw new ProviderError(
+      providerId,
+      'bad_response',
+      `model returned no text (${reason ?? 'no candidates'})`,
+    );
   }
   return text;
 }
@@ -222,7 +229,10 @@ abstract class GeminiTextMt implements MtProvider {
         fetchImpl: this.options.fetchImpl,
       }),
     );
-    const answer = parseInterpreterAnswer(this.id, raw, request, { withTranscript: false, sourceText: request.text });
+    const answer = parseInterpreterAnswer(this.id, raw, request, {
+      withTranscript: false,
+      sourceText: request.text,
+    });
     return { translations: answer.translations, skipped: answer.skip };
   }
 }

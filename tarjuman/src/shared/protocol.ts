@@ -219,7 +219,10 @@ export class ProtocolError extends Error {
   }
 }
 
-export function encodeBinaryFrame(header: AudioUtteranceHeader | SpeechChunkHeader, payload: Uint8Array): Uint8Array {
+export function encodeBinaryFrame(
+  header: AudioUtteranceHeader | SpeechChunkHeader,
+  payload: Uint8Array,
+): Uint8Array {
   const headerBytes = textEncoder.encode(JSON.stringify(header));
   if (headerBytes.byteLength > LIMITS.maxHeaderBytes) {
     throw new ProtocolError(`binary frame header too large (${headerBytes.byteLength} bytes)`);

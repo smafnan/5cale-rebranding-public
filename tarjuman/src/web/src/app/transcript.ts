@@ -32,7 +32,10 @@ function textIn(entry: TranscriptEntry, lang: LangCode): string {
   return lang === entry.sourceLang ? (entry.sourceText ?? '') : (entry.translations[lang] ?? '');
 }
 
-export function formatTranscript(entries: readonly TranscriptEntry[], format: TranscriptExportFormat): string {
+export function formatTranscript(
+  entries: readonly TranscriptEntry[],
+  format: TranscriptExportFormat,
+): string {
   const list = exportable(entries);
 
   if (format === 'json') {
@@ -59,7 +62,9 @@ export function formatTranscript(entries: readonly TranscriptEntry[], format: Tr
   }
 
   const first = list[0];
-  const title = first ? `# Meeting transcript — ${new Date(first.createdAt).toLocaleDateString()}` : '# Meeting transcript';
+  const title = first
+    ? `# Meeting transcript — ${new Date(first.createdAt).toLocaleDateString()}`
+    : '# Meeting transcript';
   const body = list.map((entry) => {
     const lines = languagesOf(entry).map((lang) => `- **${LANGUAGES[lang].name}:** ${textIn(entry, lang)}`);
     return `**${clock(entry.createdAt)} · ${SPEAKER[entry.channel]}**\n${lines.join('\n')}`;
@@ -81,7 +86,10 @@ export function transcriptFileName(format: TranscriptExportFormat, now: Date = n
 }
 
 /** Offer the transcript as a download. */
-export function downloadTranscript(entries: readonly TranscriptEntry[], format: TranscriptExportFormat): void {
+export function downloadTranscript(
+  entries: readonly TranscriptEntry[],
+  format: TranscriptExportFormat,
+): void {
   const blob = new Blob([formatTranscript(entries, format)], { type: `${MIME[format]};charset=utf-8` });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

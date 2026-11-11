@@ -1,6 +1,12 @@
 import type { DiagnosticsReport, KeysResponse } from '../../../shared/api';
 import type { ProviderStatus, ServerInfo } from '../../../shared/protocol';
-import { dismissNotice, initialChannelRuntime, mergeDeep, sanitizeLocalSettings, useAppStore } from '../state/store';
+import {
+  dismissNotice,
+  initialChannelRuntime,
+  mergeDeep,
+  sanitizeLocalSettings,
+  useAppStore,
+} from '../state/store';
 import type { AppController, TranscriptEntry } from '../state/types';
 import { installStandInController } from './controller';
 
@@ -16,7 +22,13 @@ export function isDemo(): boolean {
   return new URLSearchParams(globalThis.location?.search ?? '').get('demo') === '1';
 }
 
-function provider(kind: ProviderStatus['kind'], order: number, id: string, label: string, state: ProviderStatus['state']): ProviderStatus {
+function provider(
+  kind: ProviderStatus['kind'],
+  order: number,
+  id: string,
+  label: string,
+  state: ProviderStatus['state'],
+): ProviderStatus {
   return {
     id,
     kind,
@@ -25,7 +37,9 @@ function provider(kind: ProviderStatus['kind'], order: number, id: string, label
     state,
     requiresKey: state !== 'ready' || kind !== 'tts',
     ...(state === 'unconfigured' ? { detail: 'API key not set' } : {}),
-    ...(state === 'cooldown' ? { detail: 'HTTP 429 — rate limit reached', cooldownUntil: Date.now() + 42_000 } : {}),
+    ...(state === 'cooldown'
+      ? { detail: 'HTTP 429 — rate limit reached', cooldownUntil: Date.now() + 42_000 }
+      : {}),
   };
 }
 
@@ -52,11 +66,46 @@ const SERVER: ServerInfo = {
     ],
   },
   voices: [
-    { id: 'ur-PK-UzmaNeural', provider: 'edge', lang: 'ur', locale: 'ur-PK', label: 'Uzma (Pakistan)', gender: 'female' },
-    { id: 'ur-PK-AsadNeural', provider: 'edge', lang: 'ur', locale: 'ur-PK', label: 'Asad (Pakistan)', gender: 'male' },
-    { id: 'de-DE-KatjaNeural', provider: 'edge', lang: 'de', locale: 'de-DE', label: 'Katja (Germany)', gender: 'female' },
-    { id: 'de-DE-ConradNeural', provider: 'edge', lang: 'de', locale: 'de-DE', label: 'Conrad (Germany)', gender: 'male' },
-    { id: 'en-US-AvaMultilingualNeural', provider: 'edge', lang: 'en', locale: 'en-US', label: 'Ava (US)', gender: 'female' },
+    {
+      id: 'ur-PK-UzmaNeural',
+      provider: 'edge',
+      lang: 'ur',
+      locale: 'ur-PK',
+      label: 'Uzma (Pakistan)',
+      gender: 'female',
+    },
+    {
+      id: 'ur-PK-AsadNeural',
+      provider: 'edge',
+      lang: 'ur',
+      locale: 'ur-PK',
+      label: 'Asad (Pakistan)',
+      gender: 'male',
+    },
+    {
+      id: 'de-DE-KatjaNeural',
+      provider: 'edge',
+      lang: 'de',
+      locale: 'de-DE',
+      label: 'Katja (Germany)',
+      gender: 'female',
+    },
+    {
+      id: 'de-DE-ConradNeural',
+      provider: 'edge',
+      lang: 'de',
+      locale: 'de-DE',
+      label: 'Conrad (Germany)',
+      gender: 'male',
+    },
+    {
+      id: 'en-US-AvaMultilingualNeural',
+      provider: 'edge',
+      lang: 'en',
+      locale: 'en-US',
+      label: 'Ava (US)',
+      gender: 'female',
+    },
   ],
 };
 
@@ -118,7 +167,12 @@ const TRANSCRIPT: TranscriptEntry[] = [
     latencyMs: 4600,
     error: 'Voice unavailable: Edge voice service: connection closed before the audio was complete',
   }),
-  entry(5, { status: 'dropped', dropReason: 'hallucination', sourceText: 'Untertitel der Amara.org-Community', channel: 'incoming' }),
+  entry(5, {
+    status: 'dropped',
+    dropReason: 'hallucination',
+    sourceText: 'Untertitel der Amara.org-Community',
+    channel: 'incoming',
+  }),
   entry(6, {
     typed: true,
     sourceText: 'کیا ہم ریلیز کے بعد ایک مختصر میٹنگ رکھ سکتے ہیں؟',
@@ -134,7 +188,8 @@ const TRANSCRIPT: TranscriptEntry[] = [
     channel: 'incoming',
     status: 'error',
     sourceText: 'Ja, das passt mir gut.',
-    error: 'Translation failed: groq-gpt-oss-120b: HTTP 429 — rate limit reached. The free-tier limit was reached; try again in a moment.',
+    error:
+      'Translation failed: groq-gpt-oss-120b: HTTP 429 — rate limit reached. The free-tier limit was reached; try again in a moment.',
     latencyMs: null,
   }),
   entry(8, {
@@ -157,7 +212,8 @@ const KEYS: KeysResponse = {
     {
       name: 'GROQ_API_KEY',
       label: 'Groq',
-      description: 'Speech recognition (Whisper large-v3) and fast translation models. Free tier, no credit card.',
+      description:
+        'Speech recognition (Whisper large-v3) and fast translation models. Free tier, no credit card.',
       signupUrl: 'https://console.groq.com/keys',
       set: true,
       source: 'file',
@@ -167,7 +223,8 @@ const KEYS: KeysResponse = {
     {
       name: 'GEMINI_API_KEY',
       label: 'Google AI Studio (Gemini)',
-      description: 'Most accurate Urdu: hears the audio and translates in one step. Free tier, no credit card.',
+      description:
+        'Most accurate Urdu: hears the audio and translates in one step. Free tier, no credit card.',
       signupUrl: 'https://aistudio.google.com/apikey',
       set: true,
       source: 'env',
@@ -190,11 +247,46 @@ const KEYS: KeysResponse = {
 const DIAGNOSTICS: DiagnosticsReport = {
   startedAt: Date.now(),
   results: [
-    { kind: 'stt', id: 'gemini-audio', label: 'Google · gemini-3.5-flash-lite (audio)', outcome: 'ok', ms: 912, detail: 'key and model accepted' },
-    { kind: 'stt', id: 'groq-whisper-large-v3', label: 'Groq · whisper-large-v3', outcome: 'ok', ms: 431, detail: 'key and model accepted' },
-    { kind: 'mt', id: 'groq-gpt-oss-120b', label: 'Groq · openai/gpt-oss-120b', outcome: 'ok', ms: 688, detail: 'صبح بخیر، کیا آپ مجھے اچھی طرح سن سکتے ہیں؟ | Good morning, can you hear me well?' },
-    { kind: 'tts', id: 'azure', label: 'Azure AI Speech neural voices', outcome: 'skipped', ms: 0, detail: 'API key not set' },
-    { kind: 'tts', id: 'edge', label: 'Microsoft Edge neural voices (no key)', outcome: 'failed', ms: 6004, detail: 'Edge voice service: handshake rejected with HTTP 403' },
+    {
+      kind: 'stt',
+      id: 'gemini-audio',
+      label: 'Google · gemini-3.5-flash-lite (audio)',
+      outcome: 'ok',
+      ms: 912,
+      detail: 'key and model accepted',
+    },
+    {
+      kind: 'stt',
+      id: 'groq-whisper-large-v3',
+      label: 'Groq · whisper-large-v3',
+      outcome: 'ok',
+      ms: 431,
+      detail: 'key and model accepted',
+    },
+    {
+      kind: 'mt',
+      id: 'groq-gpt-oss-120b',
+      label: 'Groq · openai/gpt-oss-120b',
+      outcome: 'ok',
+      ms: 688,
+      detail: 'صبح بخیر، کیا آپ مجھے اچھی طرح سن سکتے ہیں؟ | Good morning, can you hear me well?',
+    },
+    {
+      kind: 'tts',
+      id: 'azure',
+      label: 'Azure AI Speech neural voices',
+      outcome: 'skipped',
+      ms: 0,
+      detail: 'API key not set',
+    },
+    {
+      kind: 'tts',
+      id: 'edge',
+      label: 'Microsoft Edge neural voices (no key)',
+      outcome: 'failed',
+      ms: 6004,
+      detail: 'Edge voice service: handshake rejected with HTTP 403',
+    },
   ],
 };
 
@@ -212,7 +304,9 @@ function standIn(): AppController {
       })),
     sendText: nothing,
     updateSettings: (patch) =>
-      useAppStore.setState((state) => ({ settings: sanitizeLocalSettings(mergeDeep(state.settings, patch)) })),
+      useAppStore.setState((state) => ({
+        settings: sanitizeLocalSettings(mergeDeep(state.settings, patch)),
+      })),
     swapLanguages: nothing,
     unlockDeviceLabels: later,
     refreshDevices: later,
@@ -272,6 +366,13 @@ export function loadDemo(): void {
       canChooseOutput: true,
       canCaptureDisplayAudio: true,
     },
-    notices: [{ id: 'demo-notice', level: 'info', message: 'Playing a test phrase on: CABLE Input (VB-Audio Virtual Cable)', at: Date.now() }],
+    notices: [
+      {
+        id: 'demo-notice',
+        level: 'info',
+        message: 'Playing a test phrase on: CABLE Input (VB-Audio Virtual Cable)',
+        at: Date.now(),
+      },
+    ],
   }));
 }

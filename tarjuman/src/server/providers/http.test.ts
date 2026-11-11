@@ -41,7 +41,13 @@ describe('httpRequest', () => {
 
   it('uses the requested method', async () => {
     const { fetch, calls } = fakeFetch(() => jsonResponse({}));
-    await httpRequest({ providerId: 'p', url: 'https://x.test', method: 'GET', signal: signal(), fetchImpl: fetch });
+    await httpRequest({
+      providerId: 'p',
+      url: 'https://x.test',
+      method: 'GET',
+      signal: signal(),
+      fetchImpl: fetch,
+    });
     expect(calls[0]?.init.method).toBe('GET');
   });
 
@@ -62,7 +68,9 @@ describe('httpRequest', () => {
   ] as const)('classifies HTTP %i as %s', async (status, kind) => {
     const { fetch } = fakeFetch(() => jsonResponse({ error: { message: 'nope' } }, { status }));
 
-    const error = await failure(httpRequest({ providerId: 'prov', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'prov', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
 
     expect(error.kind).toBe(kind);
     expect(error.status).toBe(status);
@@ -72,7 +80,9 @@ describe('httpRequest', () => {
 
   it('reads Retry-After in seconds on a 429', async () => {
     const { fetch } = fakeFetch(() => jsonResponse({}, { status: 429, headers: { 'retry-after': '7' } }));
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
     expect(error.retryAfterMs).toBe(7_000);
   });
 
@@ -87,7 +97,9 @@ describe('httpRequest', () => {
     };
     const { fetch } = fakeFetch(() => jsonResponse(body, { status: 429 }));
 
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
 
     expect(error.kind).toBe('rate_limit');
     expect(error.retryAfterMs).toBe(34_000);
@@ -96,26 +108,34 @@ describe('httpRequest', () => {
 
   it('leaves retryAfterMs unset when a 429 carries no hint', async () => {
     const { fetch } = fakeFetch(() => jsonResponse({}, { status: 429 }));
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
     expect(error.retryAfterMs).toBeUndefined();
   });
 
   it('only reports a retry hint for rate limiting', async () => {
     const { fetch } = fakeFetch(() => jsonResponse({}, { status: 503, headers: { 'retry-after': '120' } }));
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
     expect(error.kind).toBe('unavailable');
     expect(error.retryAfterMs).toBeUndefined();
   });
 
   it('keeps the error message short when the body is huge', async () => {
     const { fetch } = fakeFetch(() => new Response('x'.repeat(10_000), { status: 500 }));
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
     expect(error.message).toBe(`HTTP 500 — ${'x'.repeat(300)}`);
   });
 
   it('reports the bare status when the body is empty', async () => {
     const { fetch } = fakeFetch(() => new Response('', { status: 502 }));
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl: fetch }),
+    );
     expect(error.message).toBe('HTTP 502');
   });
 
@@ -125,7 +145,9 @@ describe('httpRequest', () => {
       throw new TypeError('fetch failed', { cause });
     }) as unknown as typeof fetch;
 
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl }),
+    );
 
     expect(error.kind).toBe('unavailable');
     expect(error.status).toBeUndefined();
@@ -137,7 +159,9 @@ describe('httpRequest', () => {
     const fetchImpl = (async () => {
       throw new Error('socket hang up');
     }) as unknown as typeof fetch;
-    const error = await failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: signal(), fetchImpl }),
+    );
     expect(error.message).toBe('network error: socket hang up');
   });
 
@@ -145,10 +169,14 @@ describe('httpRequest', () => {
     const abort = new AbortController();
     const fetchImpl = ((_url: string, init: RequestInit) =>
       new Promise((_, reject) => {
-        init.signal?.addEventListener('abort', () => reject(new DOMException('This operation was aborted', 'AbortError')));
+        init.signal?.addEventListener('abort', () =>
+          reject(new DOMException('This operation was aborted', 'AbortError')),
+        );
       })) as unknown as typeof fetch;
 
-    const pending = failure(httpRequest({ providerId: 'p', url: 'https://x.test', signal: abort.signal, fetchImpl }));
+    const pending = failure(
+      httpRequest({ providerId: 'p', url: 'https://x.test', signal: abort.signal, fetchImpl }),
+    );
     abort.abort();
     const error = await pending;
 
@@ -159,15 +187,24 @@ describe('httpRequest', () => {
     const { createServer } = await import('node:http');
     const server = createServer((request, response) => {
       response.writeHead(request.url === '/ok' ? 200 : 418, { 'content-type': 'application/json' });
-      response.end(JSON.stringify(request.url === '/ok' ? { method: request.method } : { message: 'teapot' }));
+      response.end(
+        JSON.stringify(request.url === '/ok' ? { method: request.method } : { message: 'teapot' }),
+      );
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     const { port } = server.address() as { port: number };
     try {
-      const ok = await httpRequest({ providerId: 'p', url: `http://127.0.0.1:${port}/ok`, method: 'GET', signal: signal() });
+      const ok = await httpRequest({
+        providerId: 'p',
+        url: `http://127.0.0.1:${port}/ok`,
+        method: 'GET',
+        signal: signal(),
+      });
       expect(await ok.json()).toEqual({ method: 'GET' });
 
-      const error = await failure(httpRequest({ providerId: 'p', url: `http://127.0.0.1:${port}/no`, signal: signal() }));
+      const error = await failure(
+        httpRequest({ providerId: 'p', url: `http://127.0.0.1:${port}/no`, signal: signal() }),
+      );
       expect(error).toMatchObject({ kind: 'bad_request', status: 418, message: 'HTTP 418 — teapot' });
     } finally {
       server.closeAllConnections();
@@ -183,7 +220,9 @@ describe('httpRequest', () => {
     const { port } = probe.address() as { port: number };
     await new Promise((resolve) => probe.close(resolve));
 
-    const error = await failure(httpRequest({ providerId: 'p', url: `http://127.0.0.1:${port}/`, signal: signal() }));
+    const error = await failure(
+      httpRequest({ providerId: 'p', url: `http://127.0.0.1:${port}/`, signal: signal() }),
+    );
 
     expect(error.kind).toBe('unavailable');
     expect(error.message).toMatch(/^network error/);
@@ -233,9 +272,9 @@ describe('parseRetryAfter', () => {
 
 describe('extractErrorMessage', () => {
   it('reads the OpenAI / Google envelope', () => {
-    expect(extractErrorMessage('{"error":{"message":"Invalid API Key","type":"invalid_request_error"}}')).toBe(
-      'Invalid API Key',
-    );
+    expect(
+      extractErrorMessage('{"error":{"message":"Invalid API Key","type":"invalid_request_error"}}'),
+    ).toBe('Invalid API Key');
   });
 
   it('reads a string error', () => {
@@ -243,7 +282,9 @@ describe('extractErrorMessage', () => {
   });
 
   it('reads a top-level message', () => {
-    expect(extractErrorMessage('{"message":"Resource not found","statusCode":404}')).toBe('Resource not found');
+    expect(extractErrorMessage('{"message":"Resource not found","statusCode":404}')).toBe(
+      'Resource not found',
+    );
   });
 
   it('prefers the nested error message over a top-level one', () => {
@@ -276,6 +317,10 @@ describe('readJson', () => {
 
   it('reports a non-JSON body as an unusable answer', async () => {
     const error = await failure(readJson('prov', new Response('<html>oops</html>')));
-    expect(error).toMatchObject({ kind: 'bad_response', providerId: 'prov', message: 'response was not valid JSON' });
+    expect(error).toMatchObject({
+      kind: 'bad_response',
+      providerId: 'prov',
+      message: 'response was not valid JSON',
+    });
   });
 });

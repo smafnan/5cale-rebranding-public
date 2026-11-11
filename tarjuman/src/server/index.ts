@@ -22,7 +22,14 @@ async function main(): Promise<void> {
           remoteAddress: request.ip,
         }),
       },
-      ...(pretty ? { transport: { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' } } } : {}),
+      ...(pretty
+        ? {
+            transport: {
+              target: 'pino-pretty',
+              options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
+            },
+          }
+        : {}),
     },
   });
 

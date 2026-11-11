@@ -11,7 +11,9 @@ import { z } from 'zod';
 const booleanFlag = z
   .string()
   .optional()
-  .transform((value) => (value === undefined ? undefined : ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())));
+  .transform((value) =>
+    value === undefined ? undefined : ['1', 'true', 'yes', 'on'].includes(value.toLowerCase()),
+  );
 
 const csvList = z
   .string()
@@ -76,7 +78,9 @@ export class ConfigError extends Error {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): AppConfig {
   const parsed = envSchema.safeParse(env);
   if (!parsed.success) {
-    const problems = parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ');
+    const problems = parsed.error.issues
+      .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+      .join('; ');
     throw new ConfigError(`Invalid configuration — ${problems}`);
   }
   const e = parsed.data;

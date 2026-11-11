@@ -5,7 +5,13 @@ import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 
-import { API, TTS_PROVIDER_HEADER, TTS_VOICE_HEADER, type ApiErrorBody, type KeysResponse } from '../../shared/api';
+import {
+  API,
+  TTS_PROVIDER_HEADER,
+  TTS_VOICE_HEADER,
+  type ApiErrorBody,
+  type KeysResponse,
+} from '../../shared/api';
 import { isLangCode } from '../../shared/languages';
 import { WS_PATH } from '../../shared/protocol';
 import { SPEECH_RATE_MAX, SPEECH_RATE_MIN } from '../../shared/settings';
@@ -60,7 +66,10 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
     reply.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'no-referrer');
-    reply.header('Permissions-Policy', 'microphone=(self), display-capture=(self), camera=(), geolocation=()');
+    reply.header(
+      'Permissions-Policy',
+      'microphone=(self), display-capture=(self), camera=(), geolocation=()',
+    );
     // Lets the page keep precise timers and a responsive audio thread when cross-origin isolated.
     reply.header('Cross-Origin-Opener-Policy', 'same-origin');
   });
@@ -95,7 +104,12 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
 
   app.put(API.keys, { preHandler: guard }, async (request, reply) => {
     if (!config.keysWritable) {
-      return sendError(reply, 403, 'read_only', 'This server does not accept keys from the browser. Set them in the environment.');
+      return sendError(
+        reply,
+        403,
+        'read_only',
+        'This server does not accept keys from the browser. Set them in the environment.',
+      );
     }
     const body = request.body as { keys?: unknown } | undefined;
     if (!body || typeof body.keys !== 'object' || body.keys === null || Array.isArray(body.keys)) {
@@ -188,9 +202,15 @@ export async function buildApp(services: Services, options: BuildAppOptions = {}
   }
 
   app.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
-    const status = error.statusCode && error.statusCode >= 400 && error.statusCode < 500 ? error.statusCode : 500;
+    const status =
+      error.statusCode && error.statusCode >= 400 && error.statusCode < 500 ? error.statusCode : 500;
     if (status === 500) request.log.error({ err: error }, 'request failed');
-    return sendError(reply, status, status === 500 ? 'internal' : 'bad_request', status === 500 ? 'internal error' : error.message);
+    return sendError(
+      reply,
+      status,
+      status === 500 ? 'internal' : 'bad_request',
+      status === 500 ? 'internal error' : error.message,
+    );
   });
 
   return app;

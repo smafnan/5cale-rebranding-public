@@ -42,7 +42,9 @@ export class ConnectionHub {
 
   constructor(private readonly services: Services) {
     // Tell every open call when a provider goes into or comes out of cooldown.
-    services.onStatusChange(() => this.broadcast({ type: 'providers.status', providers: services.providerStatus() }));
+    services.onStatusChange(() =>
+      this.broadcast({ type: 'providers.status', providers: services.providerStatus() }),
+    );
   }
 
   get size(): number {

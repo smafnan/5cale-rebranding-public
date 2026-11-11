@@ -21,9 +21,21 @@ import type {
  */
 
 const SAMPLE_SENTENCES: Record<LangCode, string[]> = {
-  ur: ['السلام علیکم، کیا آپ مجھے سن سکتے ہیں؟', 'ہم اگلے ہفتے نیا ورژن جاری کریں گے۔', 'مجھے اس بارے میں ایک سوال ہے۔'],
-  de: ['Guten Morgen, können Sie mich hören?', 'Wir veröffentlichen nächste Woche die neue Version.', 'Dazu habe ich eine Frage.'],
-  en: ['Good morning, can you hear me?', 'We will release the new version next week.', 'I have a question about that.'],
+  ur: [
+    'السلام علیکم، کیا آپ مجھے سن سکتے ہیں؟',
+    'ہم اگلے ہفتے نیا ورژن جاری کریں گے۔',
+    'مجھے اس بارے میں ایک سوال ہے۔',
+  ],
+  de: [
+    'Guten Morgen, können Sie mich hören?',
+    'Wir veröffentlichen nächste Woche die neue Version.',
+    'Dazu habe ich eine Frage.',
+  ],
+  en: [
+    'Good morning, can you hear me?',
+    'We will release the new version next week.',
+    'I have a question about that.',
+  ],
 };
 
 function delay(ms: number, signal: AbortSignal): Promise<void> {

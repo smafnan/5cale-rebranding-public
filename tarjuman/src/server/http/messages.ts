@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { LIMITS, UTTERANCE_SAMPLE_RATE, type AudioUtteranceHeader, type ClientMessage } from '../../shared/protocol';
+import {
+  LIMITS,
+  UTTERANCE_SAMPLE_RATE,
+  type AudioUtteranceHeader,
+  type ClientMessage,
+} from '../../shared/protocol';
 import { CHANNEL_IDS, sanitizeSessionSettings } from '../../shared/settings';
 
 /**
@@ -22,7 +27,10 @@ const clientMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('utterance.text'),
     id: utteranceId,
     channel,
-    text: z.string().min(1).max(LIMITS.maxTextChars * 2),
+    text: z
+      .string()
+      .min(1)
+      .max(LIMITS.maxTextChars * 2),
   }),
   z.object({ type: z.literal('utterance.cancel'), id: utteranceId }),
   z.object({ type: z.literal('ping'), t: z.number() }),

@@ -64,7 +64,10 @@ interface Call {
   of<T extends ServerMessage['type']>(type: T): Extract<ServerMessage, { type: T }>[];
 }
 
-async function connect(url: string, options: { headers?: Record<string, string>; start?: boolean } = {}): Promise<Call> {
+async function connect(
+  url: string,
+  options: { headers?: Record<string, string>; start?: boolean } = {},
+): Promise<Call> {
   const socket = new WebSocket(url, { headers: options.headers });
   sockets.push(socket);
   const messages: ServerMessage[] = [];
@@ -98,7 +101,12 @@ describe('server over a real socket', () => {
     const server = await start();
     expect(await (await fetch(`${server.http}/api/health`)).json()).toEqual({ ok: true });
     const info = (await (await fetch(`${server.http}/api/info`)).json()) as ServerInfo;
-    expect(info).toMatchObject({ name: 'tarjuman', protocol: PROTOCOL_VERSION, keysWritable: true, authRequired: false });
+    expect(info).toMatchObject({
+      name: 'tarjuman',
+      protocol: PROTOCOL_VERSION,
+      keysWritable: true,
+      authRequired: false,
+    });
     expect(info.providers.stt[0]).toMatchObject({ id: 'mock-stt', state: 'ready' });
     expect(info.voices.length).toBeGreaterThan(0);
   });
@@ -109,16 +117,31 @@ describe('server over a real socket', () => {
     expect(call.of('session.ready')[0]?.info.providers.tts[0]?.id).toBe('mock-tts');
 
     call.send({ type: 'utterance.text', id: 'typed1', channel: 'outgoing', text: 'یہ ایک ٹیسٹ ہے' });
-    await waitFor(() => call.of('utterance.done').some((m) => m.id === 'typed1'), 'typed utterance to finish');
+    await waitFor(
+      () => call.of('utterance.done').some((m) => m.id === 'typed1'),
+      'typed utterance to finish',
+    );
 
     const pcm = tonePcm(3);
     call.socket.send(
       encodeBinaryFrame(
-        { type: 'utterance.audio', id: 'spoken1', channel: 'incoming', sampleRate: 16_000, durationMs: 3000, endedAt: Date.now(), forcedSplit: false, playbackLagMs: 0 },
+        {
+          type: 'utterance.audio',
+          id: 'spoken1',
+          channel: 'incoming',
+          sampleRate: 16_000,
+          durationMs: 3000,
+          endedAt: Date.now(),
+          forcedSplit: false,
+          playbackLagMs: 0,
+        },
         pcm16ToBytes(pcm),
       ),
     );
-    await waitFor(() => call.of('utterance.done').some((m) => m.id === 'spoken1'), 'spoken utterance to finish');
+    await waitFor(
+      () => call.of('utterance.done').some((m) => m.id === 'spoken1'),
+      'spoken utterance to finish',
+    );
 
     expect(call.of('utterance.transcript').map((m) => [m.id, m.lang])).toEqual([
       ['typed1', 'ur'],
@@ -156,7 +179,12 @@ describe('server over a real socket', () => {
     const call = await connect(server.ws);
     call.socket.send('{not json');
     call.socket.send(Buffer.from([0, 0, 0, 9, 1, 2]));
-    call.socket.send(encodeBinaryFrame({ type: 'utterance.audio', id: 'bad id!', channel: 'outgoing' } as never, new Uint8Array(4)));
+    call.socket.send(
+      encodeBinaryFrame(
+        { type: 'utterance.audio', id: 'bad id!', channel: 'outgoing' } as never,
+        new Uint8Array(4),
+      ),
+    );
     await waitFor(() => call.of('error').length === 3, 'three protocol errors');
     call.send({ type: 'ping', t: 1 });
     await waitFor(() => call.of('pong').length === 1, 'the connection to still work');
@@ -179,10 +207,18 @@ describe('server over a real socket', () => {
     // attacker.example whose DNS was re-pointed at 127.0.0.1 would arrive with this Host.
     const rebindingStatus = await new Promise<number>((resolve, reject) => {
       const url = new URL(`${server.http}/api/info`);
-      httpRequest({ host: url.hostname, port: url.port, path: url.pathname, headers: { Host: 'attacker.example:8787' } }, (res) => {
-        res.resume();
-        resolve(res.statusCode ?? 0);
-      })
+      httpRequest(
+        {
+          host: url.hostname,
+          port: url.port,
+          path: url.pathname,
+          headers: { Host: 'attacker.example:8787' },
+        },
+        (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+        },
+      )
         .on('error', reject)
         .end();
     });
@@ -193,8 +229,13 @@ describe('server over a real socket', () => {
     const server = await start({ ACCESS_TOKEN: 'correct-horse-battery' });
     expect((await fetch(`${server.http}/api/health`)).status).toBe(200);
     expect((await fetch(`${server.http}/api/info`)).status).toBe(401);
-    expect((await fetch(`${server.http}/api/info`, { headers: { authorization: 'Bearer wrong-token-value' } })).status).toBe(401);
-    const ok = await fetch(`${server.http}/api/info`, { headers: { authorization: 'Bearer correct-horse-battery' } });
+    expect(
+      (await fetch(`${server.http}/api/info`, { headers: { authorization: 'Bearer wrong-token-value' } }))
+        .status,
+    ).toBe(401);
+    const ok = await fetch(`${server.http}/api/info`, {
+      headers: { authorization: 'Bearer correct-horse-battery' },
+    });
     expect(((await ok.json()) as ServerInfo).authRequired).toBe(true);
 
     const refused = await connect(server.ws, { start: false });
@@ -206,7 +247,11 @@ describe('server over a real socket', () => {
   it('saves keys to a private file, masks them, and refuses when read-only', async () => {
     const server = await start();
     const put = (keys: Record<string, unknown>, base = server.http) =>
-      fetch(`${base}/api/keys`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ keys }) });
+      fetch(`${base}/api/keys`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ keys }),
+      });
 
     const saved = (await (await put({ GROQ_API_KEY: 'gsk_abcdefghijklmnop' })).json()) as KeysResponse;
     const groq = saved.keys.find((key) => key.name === 'GROQ_API_KEY');
@@ -229,14 +274,22 @@ describe('server over a real socket', () => {
   it('previews a voice and validates the request', async () => {
     const server = await start();
     const post = (body: unknown) =>
-      fetch(`${server.http}/api/tts`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      fetch(`${server.http}/api/tts`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
     const ok = await post({ text: 'Guten Morgen', lang: 'de', voice: 'auto' });
     expect(ok.status).toBe(200);
     expect(ok.headers.get('content-type')).toBe('audio/wav');
     expect(ok.headers.get('x-tarjuman-provider')).toBe('mock-tts');
     expect(ok.headers.get('x-tarjuman-voice')).toBe('mock-de');
-    expect(Buffer.from(await ok.arrayBuffer()).subarray(0, 4).toString()).toBe('RIFF');
+    expect(
+      Buffer.from(await ok.arrayBuffer())
+        .subarray(0, 4)
+        .toString(),
+    ).toBe('RIFF');
 
     expect((await post({ text: '', lang: 'de' })).status).toBe(400);
     expect((await post({ text: 'hello', lang: 'xx' })).status).toBe(400);
@@ -245,7 +298,9 @@ describe('server over a real socket', () => {
 
   it('runs diagnostics against every provider', async () => {
     const server = await start();
-    const report = (await (await fetch(`${server.http}/api/diagnostics`, { method: 'POST' })).json()) as DiagnosticsReport;
+    const report = (await (
+      await fetch(`${server.http}/api/diagnostics`, { method: 'POST' })
+    ).json()) as DiagnosticsReport;
     expect(report.results.map((r) => [r.kind, r.id, r.outcome])).toEqual([
       ['stt', 'mock-stt', 'ok'],
       ['mt', 'mock-mt', 'ok'],

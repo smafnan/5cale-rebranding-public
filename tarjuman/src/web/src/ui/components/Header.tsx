@@ -35,7 +35,9 @@ function ProviderChip({ kind }: { kind: ProviderKind }) {
   let value = '…';
   if (summary.active) value = summary.active.label;
   else if (summary.tone === 'warn') {
-    value = summary.cooldownUntil ? `Cooling down · ${formatCountdown(summary.cooldownUntil - now)}` : 'Cooling down';
+    value = summary.cooldownUntil
+      ? `Cooling down · ${formatCountdown(summary.cooldownUntil - now)}`
+      : 'Cooling down';
   } else if (summary.tone === 'danger') value = 'Needs a key';
 
   return (

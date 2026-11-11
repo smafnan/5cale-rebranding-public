@@ -37,7 +37,10 @@ const SENTENCE: Record<LangCode, string> = {
   en: 'We will release the new version next week.',
 };
 
-function harness(scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = {}, settings?: SessionSettings) {
+function harness(
+  scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = {},
+  settings?: SessionSettings,
+) {
   const sttRequests: SttRequest[] = [];
   const mtRequests: MtRequest[] = [];
   const ttsRequests: TtsRequest[] = [];
@@ -52,7 +55,9 @@ function harness(scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = 
     supportsLanguage: () => true,
     transcribe: async (request) => {
       sttRequests.push(request);
-      return scripts.stt ? scripts.stt(request, sttRequests.length - 1) : { text: SENTENCE[request.language] };
+      return scripts.stt
+        ? scripts.stt(request, sttRequests.length - 1)
+        : { text: SENTENCE[request.language] };
     },
   };
   const mt: MtProvider = {
@@ -80,7 +85,9 @@ function harness(scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = 
     voices: () => [],
     synthesize: async (request) => {
       ttsRequests.push(request);
-      const audio = scripts.tts ? await scripts.tts(request, ttsRequests.length - 1) : new TextEncoder().encode(request.text);
+      const audio = scripts.tts
+        ? await scripts.tts(request, ttsRequests.length - 1)
+        : new TextEncoder().encode(request.text);
       return { audio, mime: 'audio/mpeg', voice: request.voice ?? `default-${request.lang}` };
     },
   };
@@ -101,7 +108,9 @@ function harness(scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = 
     transport: {
       send: (message) => {
         events.push(message);
-        order.push('id' in message ? `${message.type.replace('utterance.', '')}:${message.id}` : message.type);
+        order.push(
+          'id' in message ? `${message.type.replace('utterance.', '')}:${message.id}` : message.type,
+        );
       },
       sendBinary: (frame) => {
         const decoded = decodeBinaryFrame(frame);
@@ -114,7 +123,12 @@ function harness(scripts: { stt?: SttScript; mt?: MtScript; tts?: TtsScript } = 
   session.updateSettings(settings ?? DEFAULT_SESSION_SETTINGS);
 
   // Four seconds by default: long enough for the sample sentences to be plausible speech.
-  const audio = (id: string, channel: ChannelId = 'outgoing', overrides: Partial<AudioUtteranceHeader> = {}, seconds = 4) => {
+  const audio = (
+    id: string,
+    channel: ChannelId = 'outgoing',
+    overrides: Partial<AudioUtteranceHeader> = {},
+    seconds = 4,
+  ) => {
     const pcm = tonePcm(seconds);
     session.submitAudio(
       {
@@ -163,7 +177,11 @@ describe('InterpreterSession', () => {
     await h.session.idle();
     const request = h.sttRequests[0]!;
     expect(request.language).toBe('de');
-    expect(request.translate).toMatchObject({ sourceLang: 'de', targetLangs: ['ur', 'en'], formality: 'formal' });
+    expect(request.translate).toMatchObject({
+      sourceLang: 'de',
+      targetLangs: ['ur', 'en'],
+      formality: 'formal',
+    });
     expect(h.mtRequests[0]).toMatchObject({ sourceLang: 'de', targetLangs: ['ur', 'en'], text: SENTENCE.de });
     expect(h.ttsRequests[0]).toMatchObject({ lang: 'ur', text: SENTENCE.ur });
   });
@@ -175,7 +193,10 @@ describe('InterpreterSession', () => {
     h.audio('u1');
     await h.session.idle();
     expect(h.mtRequests).toHaveLength(0);
-    expect(h.of('utterance.translation')[0]).toMatchObject({ provider: 'stt', translations: { de: 'Vom Erkenner.' } });
+    expect(h.of('utterance.translation')[0]).toMatchObject({
+      provider: 'stt',
+      translations: { de: 'Vom Erkenner.' },
+    });
     expect(h.speech[0]?.text).toBe('Vom Erkenner.');
   });
 
@@ -201,7 +222,16 @@ describe('InterpreterSession', () => {
     h.audio('short', 'outgoing', {}, 0.1);
     h.audio('long', 'outgoing', {}, 31);
     h.session.submitAudio(
-      { type: 'utterance.audio', id: 'silent', channel: 'outgoing', sampleRate: 16_000, durationMs: 1000, endedAt: 0, forcedSplit: false, playbackLagMs: 0 },
+      {
+        type: 'utterance.audio',
+        id: 'silent',
+        channel: 'outgoing',
+        sampleRate: 16_000,
+        durationMs: 1000,
+        endedAt: 0,
+        forcedSplit: false,
+        playbackLagMs: 0,
+      },
       new Int16Array(16_000),
     );
     await h.session.idle();
@@ -258,7 +288,9 @@ describe('InterpreterSession', () => {
 
   it('keeps arrival order on a channel even when an earlier utterance is recognized later', async () => {
     const slow = deferred<SttResult>();
-    const h = harness({ stt: (_request, call) => (call === 0 ? slow.promise : { text: 'Zweiter Satz ist schnell erkannt.' }) });
+    const h = harness({
+      stt: (_request, call) => (call === 0 ? slow.promise : { text: 'Zweiter Satz ist schnell erkannt.' }),
+    });
     h.audio('u1', 'incoming');
     h.audio('u2', 'incoming');
     // Both are being recognized in parallel; nothing may be sent for u2 before u1.
@@ -269,7 +301,10 @@ describe('InterpreterSession', () => {
     // Every event exactly once ...
     expect([...h.order].sort()).toEqual(
       ['transcript', 'translation', 'speech', 'done']
-        .flatMap((kind) => [`${kind}:u1${kind === 'speech' ? '#0' : ''}`, `${kind}:u2${kind === 'speech' ? '#0' : ''}`])
+        .flatMap((kind) => [
+          `${kind}:u1${kind === 'speech' ? '#0' : ''}`,
+          `${kind}:u2${kind === 'speech' ? '#0' : ''}`,
+        ])
         .sort(),
     );
     // ... and, per kind, u1 before u2.
@@ -295,7 +330,9 @@ describe('InterpreterSession', () => {
 
   it('does not let one channel hold up the other', async () => {
     const stuck = deferred<SttResult>();
-    const h = harness({ stt: (request) => (request.language === 'ur' ? stuck.promise : { text: SENTENCE.de }) });
+    const h = harness({
+      stt: (request) => (request.language === 'ur' ? stuck.promise : { text: SENTENCE.de }),
+    });
     h.audio('mine', 'outgoing');
     h.audio('theirs', 'incoming');
     await waitFor(() => h.order.includes('done:theirs'), 'the incoming utterance to finish');
@@ -306,13 +343,20 @@ describe('InterpreterSession', () => {
   });
 
   it('splits long translations into ordered chunks and marks the last one', async () => {
-    const long = Array.from({ length: 8 }, (_, i) => `Das ist der Satz Nummer ${i + 1} in einer längeren Antwort.`).join(' ');
-    const h = harness({ mt: (request) => ({ translations: Object.fromEntries(request.targetLangs.map((l) => [l, long])) }) });
+    const long = Array.from(
+      { length: 8 },
+      (_, i) => `Das ist der Satz Nummer ${i + 1} in einer längeren Antwort.`,
+    ).join(' ');
+    const h = harness({
+      mt: (request) => ({ translations: Object.fromEntries(request.targetLangs.map((l) => [l, long])) }),
+    });
     h.audio('u1');
     await h.session.idle();
     expect(h.speech.length).toBeGreaterThan(1);
     expect(h.speech.map((chunk) => chunk.header.index)).toEqual(h.speech.map((_, i) => i));
-    expect(h.speech.map((chunk) => chunk.header.last)).toEqual(h.speech.map((_, i) => i === h.speech.length - 1));
+    expect(h.speech.map((chunk) => chunk.header.last)).toEqual(
+      h.speech.map((_, i) => i === h.speech.length - 1),
+    );
     expect(h.speech.map((chunk) => chunk.text).join(' ')).toBe(long);
   });
 
@@ -396,7 +440,11 @@ describe('InterpreterSession', () => {
     h.audio('u1', 'outgoing', { playbackLagMs: 6_000, forcedSplit: true });
     await h.session.idle();
     expect(h.sttRequests[0]?.hints).toEqual(['Tarjuman']);
-    expect(h.mtRequests[0]).toMatchObject({ formality: 'informal', fragment: true, glossary: settings.glossary });
+    expect(h.mtRequests[0]).toMatchObject({
+      formality: 'informal',
+      fragment: true,
+      glossary: settings.glossary,
+    });
     expect(h.ttsRequests[0]).toMatchObject({ voice: 'de-DE-ConradNeural', rate: 1.2 });
   });
 

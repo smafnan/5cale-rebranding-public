@@ -295,14 +295,17 @@ export class FallbackChain<P extends ProviderBase> {
 
   private normalize(provider: P, error: unknown, timedOut: boolean): ProviderError {
     if (timedOut) {
-      return new ProviderError(provider.id, 'timeout', `no answer within ${provider.timeoutMs} ms`, { cause: error });
+      return new ProviderError(provider.id, 'timeout', `no answer within ${provider.timeoutMs} ms`, {
+        cause: error,
+      });
     }
     if (error instanceof ProviderError) return error;
     return new ProviderError(provider.id, 'unavailable', describeError(error), { cause: error });
   }
 
   private recordSuccess(health: Health): void {
-    const wasUnhealthy = health.consecutiveFailures > 0 || health.cooldownUntil > 0 || health.lastError !== undefined;
+    const wasUnhealthy =
+      health.consecutiveFailures > 0 || health.cooldownUntil > 0 || health.lastError !== undefined;
     health.consecutiveFailures = 0;
     health.badRequestStrikes = 0;
     health.cooldownUntil = 0;
@@ -366,7 +369,13 @@ export class FallbackChain<P extends ProviderBase> {
     const now = this.now();
     return this.providers.map((provider, order) => {
       const health = this.healthOf(provider);
-      const base = { id: provider.id, kind: this.kind, label: provider.label, order, requiresKey: provider.requiresKey };
+      const base = {
+        id: provider.id,
+        kind: this.kind,
+        label: provider.label,
+        order,
+        requiresKey: provider.requiresKey,
+      };
       if (!provider.isConfigured()) {
         return { ...base, state: 'unconfigured' as const, detail: 'API key not set' };
       }

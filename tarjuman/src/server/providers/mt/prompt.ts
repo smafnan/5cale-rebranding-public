@@ -43,7 +43,8 @@ function registerRule(job: TranslationJob): string {
 function scriptRule(job: TranslationJob): string {
   const rules: string[] = [];
   const langs = new Set<LangCode>([job.sourceLang, ...job.targetLangs]);
-  if (langs.has('ur')) rules.push('Urdu is written in Urdu (Perso-Arabic) script, never in Roman Urdu or Devanagari');
+  if (langs.has('ur'))
+    rules.push('Urdu is written in Urdu (Perso-Arabic) script, never in Roman Urdu or Devanagari');
   const latin = [...langs].filter((l) => LANGUAGES[l].script === 'Latn').map((l) => LANGUAGES[l].name);
   if (latin.length > 0) rules.push(`${latin.join(' and ')} in Latin script`);
   return `${rules.join('; ')}.`;
@@ -113,7 +114,9 @@ export function buildContextBlock(job: TranslationJob): string {
   if (job.glossary.length > 0) {
     lines.push('Glossary:');
     for (const entry of job.glossary) {
-      lines.push(entry.translation ? `- ${entry.term} => ${entry.translation}` : `- ${entry.term} (keep unchanged)`);
+      lines.push(
+        entry.translation ? `- ${entry.term} => ${entry.translation}` : `- ${entry.term} (keep unchanged)`,
+      );
     }
     lines.push('');
   }
@@ -147,7 +150,10 @@ export function answerJsonSchema(job: TranslationJob, withTranscript: boolean): 
   };
   const required = ['skip'];
   if (withTranscript) {
-    properties.transcript = { type: 'string', description: `verbatim ${LANGUAGES[job.sourceLang].name} transcript` };
+    properties.transcript = {
+      type: 'string',
+      description: `verbatim ${LANGUAGES[job.sourceLang].name} transcript`,
+    };
     required.push('transcript');
   }
   for (const lang of answerOrder(job.targetLangs)) {
@@ -236,21 +242,37 @@ export function parseInterpreterAnswer(
     throw new ProviderError(providerId, 'bad_response', 'model returned translations without a transcript');
   }
   if (transcript && !looksLikeLanguage(transcript, job.sourceLang)) {
-    throw new ProviderError(providerId, 'bad_response', `transcript is not in ${LANGUAGES[job.sourceLang].name} script`);
+    throw new ProviderError(
+      providerId,
+      'bad_response',
+      `transcript is not in ${LANGUAGES[job.sourceLang].name} script`,
+    );
   }
 
   const sourceLength = (options.sourceText ?? transcript).length;
   for (const lang of job.targetLangs) {
     const value = translations[lang];
     if (!value) {
-      throw new ProviderError(providerId, 'bad_response', `model returned no ${LANGUAGES[lang].name} translation`);
+      throw new ProviderError(
+        providerId,
+        'bad_response',
+        `model returned no ${LANGUAGES[lang].name} translation`,
+      );
     }
     if (!looksLikeLanguage(value, lang)) {
-      throw new ProviderError(providerId, 'bad_response', `${LANGUAGES[lang].name} translation is in the wrong script`);
+      throw new ProviderError(
+        providerId,
+        'bad_response',
+        `${LANGUAGES[lang].name} translation is in the wrong script`,
+      );
     }
     // A translation several times longer than the source means the model rambled or explained.
     if (sourceLength > 0 && value.length > sourceLength * 4 + 80) {
-      throw new ProviderError(providerId, 'bad_response', `${LANGUAGES[lang].name} translation is implausibly long`);
+      throw new ProviderError(
+        providerId,
+        'bad_response',
+        `${LANGUAGES[lang].name} translation is implausibly long`,
+      );
     }
   }
   return { skip: false, transcript, translations };

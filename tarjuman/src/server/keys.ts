@@ -60,7 +60,8 @@ export class KeyStore {
       if (parsed && typeof parsed === 'object') {
         for (const def of this.definitions) {
           const value = (parsed as Record<string, unknown>)[def.name];
-          if (typeof value === 'string' && value.length > 0 && value.length <= MAX_KEY_LENGTH) next[def.name] = value;
+          if (typeof value === 'string' && value.length > 0 && value.length <= MAX_KEY_LENGTH)
+            next[def.name] = value;
         }
       }
       this.fileKeys = next;

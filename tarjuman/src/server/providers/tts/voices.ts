@@ -74,10 +74,12 @@ export function ssmlRate(multiplier: number): string {
 
 /** Escape text for inclusion in SSML and drop control characters the service rejects. */
 export function escapeSsmlText(text: string): string {
-  return text
-    // eslint-disable-next-line no-control-regex -- removing control characters is the point
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return (
+    text
+      // eslint-disable-next-line no-control-regex -- removing control characters is the point
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+  );
 }
