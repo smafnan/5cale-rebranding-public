@@ -27,8 +27,10 @@ export class KeyValidationError extends Error {
   }
 }
 
+/** A hint that identifies a key to its owner without giving a meaningful part of it away. */
 function mask(value: string): string {
-  if (value.length <= 8) return '••••';
+  // Real provider keys are 32 characters and longer; anything short gets no hint at all.
+  if (value.length < 24) return '••••';
   return `${value.slice(0, 4)}…${value.slice(-4)}`;
 }
 

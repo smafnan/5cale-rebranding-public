@@ -133,7 +133,9 @@ export function buildContextBlock(job: TranslationJob): string {
 export function buildUserPrompt(job: TranslationJob, text: string): string {
   const source = LANGUAGES[job.sourceLang].name;
   const note = job.fragment ? ', cut off mid-sentence' : '';
-  return `${buildContextBlock(job)}Utterance (${source}${note}):\n<utterance>${text}</utterance>`;
+  // What was said is data. Make sure it cannot close the delimiter it is wrapped in.
+  const utterance = text.replace(/<\/?utterance[^>]*>/gi, ' ');
+  return `${buildContextBlock(job)}Utterance (${source}${note}):\n<utterance>${utterance}</utterance>`;
 }
 
 /** Instruction that accompanies the audio in one-call audio mode. */

@@ -253,13 +253,18 @@ describe('server over a real socket', () => {
         body: JSON.stringify({ keys }),
       });
 
-    const saved = (await (await put({ GROQ_API_KEY: 'gsk_abcdefghijklmnop' })).json()) as KeysResponse;
+    const secret = 'gsk_abcdefghijklmnopqrstuvwxyz0123456789';
+    const saved = (await (await put({ GROQ_API_KEY: secret })).json()) as KeysResponse;
     const groq = saved.keys.find((key) => key.name === 'GROQ_API_KEY');
-    expect(groq).toMatchObject({ set: true, source: 'file', hint: 'gsk_…mnop' });
-    expect(JSON.stringify(saved)).not.toContain('gsk_abcdefghijklmnop');
+    expect(groq).toMatchObject({ set: true, source: 'file', hint: 'gsk_…6789' });
+    expect(JSON.stringify(saved)).not.toContain(secret);
+    // A short value gets no hint at all: half of it would be the hint.
+    const short = (await (await put({ OPENAI_COMPAT_API_KEY: 'short-key-123' })).json()) as KeysResponse;
+    expect(short.keys.find((key) => key.name === 'OPENAI_COMPAT_API_KEY')?.hint).toBe('••••');
+    await put({ OPENAI_COMPAT_API_KEY: null });
 
     const file = path.join(server.dataDir, 'keys.json');
-    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({ GROQ_API_KEY: 'gsk_abcdefghijklmnop' });
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({ GROQ_API_KEY: secret });
     expect((await stat(file)).mode & 0o777).toBe(0o600);
 
     expect((await put({ NOT_A_KEY: 'x' })).status).toBe(400);
@@ -268,7 +273,7 @@ describe('server over a real socket', () => {
     expect(removed.keys.find((key) => key.name === 'GROQ_API_KEY')?.set).toBe(false);
 
     const readOnly = await start({ KEYS_WRITABLE: '0' });
-    expect((await put({ GROQ_API_KEY: 'gsk_abcdefghijklmnop' }, readOnly.http)).status).toBe(403);
+    expect((await put({ GROQ_API_KEY: secret }, readOnly.http)).status).toBe(403);
   });
 
   it('previews a voice and validates the request', async () => {
