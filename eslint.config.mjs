@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate project with its own toolchain; see tarjuman/README.md.
+    "tarjuman/**",
   ]),
 ]);
 
