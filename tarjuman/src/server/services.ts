@@ -181,7 +181,8 @@ function buildProviders(keys: KeyStore, env: NodeJS.ProcessEnv, mock: boolean): 
       getKey: () => keys.get('AZURE_SPEECH_KEY'),
       getRegion: () => env.AZURE_SPEECH_REGION,
     }),
-    new EdgeTtsProvider(),
+    // Node's WebSocket client does not pick up a proxy from the environment by itself.
+    new EdgeTtsProvider({ proxyUrl: env.HTTPS_PROXY?.trim() || env.https_proxy?.trim() || undefined }),
   ];
 
   return { stt, mt, tts };

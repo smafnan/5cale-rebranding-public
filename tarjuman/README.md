@@ -17,10 +17,11 @@ with English alongside. It runs on free tiers; nothing to pay for a proof of con
   other participants install nothing.
 
 > **Status: proof of concept.** The pipeline, the browser audio engine and the interface
-> are covered by automated tests, including a real browser listening to recorded speech.
-> The calls to the real speech and translation services could not be exercised where this
-> was built (no API keys, restricted network), so run `npm run doctor` after adding your
-> keys: it tests every provider and tells you exactly what works. See
+> are covered by automated tests, including a real browser listening to recorded speech,
+> and the keyless voice and translation paths were run against the real services. What
+> could not be exercised where this was built is anything that needs an API key (speech
+> recognition and the LLM translators) and a real Teams call. Run `npm run doctor` after
+> adding your keys: it tests every provider and tells you exactly what works. See
 > [What has and has not been verified](#what-has-and-has-not-been-verified).
 
 ## Quick start
@@ -137,15 +138,23 @@ Verified by automated tests (`npm run check`, `npm run test:e2e`):
   prompt parsing, and the request each provider sends, against recorded response shapes.
 - The Edge voice protocol against a local stand-in service, with authentication tokens
   checked against the reference implementation.
-- Google's API was reached with the real request; an invalid key is reported correctly.
 
-Not verified here, because it needs your keys, an open network and a real call:
+Verified by hand against the real services (November 2026):
 
-- Real answers from Groq and Gemini (model availability and quality on your account).
-- A real connection to the Edge voice service.
+- The keyless Microsoft neural voices: Urdu, German and English speech synthesized, and
+  every voice in the catalogue exists on the service.
+- The keyless path end to end through the server: typed German → MyMemory → Urdu voice,
+  and typed Urdu → German voice, in 2–3 seconds.
+- The Groq and Google endpoints are reached with the real requests, and an invalid key is
+  reported correctly by both.
+
+Not verified, because it needs your keys and a real call:
+
+- Real answers from Groq and Gemini: whether the default models exist on your account, how
+  good and how fast they are.
 - A real Teams call with a virtual cable on your operating system.
 
-`npm run doctor` covers the first two in a minute. The third is the setup guide.
+`npm run doctor` covers the first in a minute. The second is the setup guide.
 
 ## Development
 
@@ -175,7 +184,7 @@ HTTPS for the microphone on anything but `localhost`).
 | Your own translation is translated back                          | Wear headphones, or switch off "I am using headphones".                                                                                                                         |
 | Translations arrive late                                         | Look at the latency badge on each entry. Shorten "Pause that ends a sentence", speak in shorter sentences, or check which provider is active in the status chips.               |
 | Voice is missing, captions work                                  | The voice provider failed (see the note on the entry). Add an Azure AI Speech key.                                                                                              |
-| Behind a company proxy nothing connects                          | Start with `NODE_USE_ENV_PROXY=1` and `HTTPS_PROXY` set. The keyless voice needs a direct WebSocket connection; use Azure voices otherwise.                                     |
+| Behind a company proxy nothing connects                          | Start the server with `HTTPS_PROXY` set and `NODE_USE_ENV_PROXY=1`. If the proxy inspects TLS, also point `NODE_EXTRA_CA_CERTS` at your company's CA file.                      |
 
 ## Roadmap
 

@@ -32,13 +32,16 @@ export const NEURAL_VOICES: readonly NeuralVoice[] = [
   voice('de-DE-KatjaNeural', 'de', 'Katja (Germany)', 'female'),
   voice('de-DE-ConradNeural', 'de', 'Conrad (Germany)', 'male'),
   voice('de-DE-SeraphinaMultilingualNeural', 'de', 'Seraphina (Germany, multilingual)', 'female'),
+  voice('de-DE-FlorianMultilingualNeural', 'de', 'Florian (Germany, multilingual)', 'male'),
   voice('de-DE-AmalaNeural', 'de', 'Amala (Germany)', 'female'),
   voice('de-DE-KillianNeural', 'de', 'Killian (Germany)', 'male'),
   voice('de-AT-IngridNeural', 'de', 'Ingrid (Austria)', 'female'),
   voice('de-AT-JonasNeural', 'de', 'Jonas (Austria)', 'male'),
   voice('de-CH-LeniNeural', 'de', 'Leni (Switzerland)', 'female'),
   voice('de-CH-JanNeural', 'de', 'Jan (Switzerland)', 'male'),
-  // English
+  // English. The single-language voices come first: they answer faster than the multilingual ones.
+  voice('en-US-AvaNeural', 'en', 'Ava (US)', 'female'),
+  voice('en-US-AndrewNeural', 'en', 'Andrew (US)', 'male'),
   voice('en-US-AvaMultilingualNeural', 'en', 'Ava (US, multilingual)', 'female'),
   voice('en-US-AndrewMultilingualNeural', 'en', 'Andrew (US, multilingual)', 'male'),
   voice('en-US-EmmaMultilingualNeural', 'en', 'Emma (US, multilingual)', 'female'),

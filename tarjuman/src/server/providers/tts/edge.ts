@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import WebSocket from 'ws';
 
 import { LANG_CODES, type LangCode } from '../../../shared/languages';
@@ -168,6 +169,8 @@ function limitTextBytes(text: string): string {
 export interface EdgeTtsOptions {
   /** Override the endpoint (tests point this at a local fake). */
   endpoint?: string;
+  /** HTTP(S) proxy to tunnel the WebSocket through (company networks), e.g. from HTTPS_PROXY. */
+  proxyUrl?: string;
   now?: () => number;
 }
 
@@ -187,12 +190,14 @@ export class EdgeTtsProvider implements TtsProvider {
   readonly requiresKey = false;
   readonly timeoutMs = 12_000;
   private readonly endpoint: string;
+  private readonly agent: HttpsProxyAgent<string> | undefined;
   private readonly now: () => number;
   /** Correction learned from the server's clock when a token is rejected. */
   private clockSkewMs = 0;
 
   constructor(options: EdgeTtsOptions = {}) {
     this.endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
+    this.agent = options.proxyUrl ? new HttpsProxyAgent(options.proxyUrl) : undefined;
     this.now = options.now ?? Date.now;
   }
 
@@ -279,6 +284,7 @@ export class EdgeTtsProvider implements TtsProvider {
     return new Promise<TtsResult>((resolve, reject) => {
       const socket = new WebSocket(this.connectionUrl(), {
         handshakeTimeout: HANDSHAKE_TIMEOUT_MS,
+        agent: this.agent,
         headers: {
           Pragma: 'no-cache',
           'Cache-Control': 'no-cache',
