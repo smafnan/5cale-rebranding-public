@@ -28,10 +28,14 @@ function classifyStatus(status: number): ProviderErrorKind {
 
 /**
  * How long the provider asked us to wait, in ms.
- * Understands `Retry-After` (seconds or HTTP date) and the `"retryDelay": "34s"` hint
- * that Google APIs put in the error body.
+ * Understands `Retry-After-Ms`, `Retry-After` (seconds or HTTP date) and the
+ * `"retryDelay": "34s"` hint that Google APIs put in the error body.
  */
 export function parseRetryAfter(headers: Headers, body: string, now: number = Date.now()): number | undefined {
+  // Groq additionally sends the wait in milliseconds; prefer the more precise value.
+  const millis = Number(headers.get('retry-after-ms')?.trim() || Number.NaN);
+  if (Number.isFinite(millis) && millis >= 0) return Math.ceil(millis);
+
   const header = headers.get('retry-after')?.trim();
   if (header) {
     const seconds = Number(header);

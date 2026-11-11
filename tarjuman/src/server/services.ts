@@ -46,7 +46,7 @@ export const KEY_DEFINITIONS: KeyDefinition[] = [
     label: 'Google AI Studio (Gemini)',
     description:
       'Most accurate Urdu: hears the audio and translates in one step. Free tier, no credit card. ' +
-      'Note: Google only permits its paid tier for users in the EEA, UK and Switzerland, and may use free-tier data to improve its products.',
+      "Note: Google's terms require its paid tier for applications offered to users in the EEA, the UK and Switzerland; check them before relying on the free tier there.",
     signupUrl: 'https://aistudio.google.com/apikey',
     recommended: true,
   },

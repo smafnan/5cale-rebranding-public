@@ -108,6 +108,14 @@ const COMPRESSION_RATIO_THRESHOLD = 2.4;
 /** Below this the recognizer was guessing, whatever it says about speech probability. */
 const LOGPROB_FLOOR = -1.5;
 
+/**
+ * Nobody speaks faster than this many characters per second (brisk speech is 15-20).
+ * More text than the audio could possibly hold was invented by the recognizer.
+ */
+const MAX_CHARS_PER_SECOND = 40;
+/** Short clips make the rate meaningless; below this length the check is skipped. */
+const RATE_CHECK_MIN_CHARS = 40;
+
 /** Clips shorter than this give Whisper too little to work with to trust a stock phrase. */
 const WEAK_PHRASE_MIN_AUDIO_MS = 1_500;
 
@@ -163,6 +171,13 @@ export function judgeTranscript(text: string, evidence: TranscriptEvidence): Tra
   }
   if (isRepetitionLoop(normalized)) {
     return { keep: false, reason: 'hallucination', detail: 'repetition loop' };
+  }
+  if (
+    evidence.audioMs > 0 &&
+    normalized.length >= RATE_CHECK_MIN_CHARS &&
+    normalized.length / (evidence.audioMs / 1000) > MAX_CHARS_PER_SECOND
+  ) {
+    return { keep: false, reason: 'hallucination', detail: 'more text than the audio can hold' };
   }
 
   for (const pattern of ALWAYS_ARTEFACT) {

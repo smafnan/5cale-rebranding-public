@@ -217,18 +217,29 @@ export class EdgeTtsProvider implements TtsProvider {
     try {
       return await this.attempt(text, voice.id, request);
     } catch (error) {
-      if (error instanceof HandshakeRejected && error.status === 403 && error.serverDate !== undefined) {
-        // The token is time-based: a wrong local clock is the usual cause. Adopt the
-        // server's clock and try once more.
+      if (request.signal.aborted || !this.worthRetrying(error)) throw this.classify(error, request.signal);
+      if (error instanceof HandshakeRejected && error.serverDate !== undefined) {
+        // The token is time-based: a wrong local clock is the usual cause of a 403.
+        // Adopt the server's clock for this and all later requests.
         this.clockSkewMs = error.serverDate - this.now();
-        try {
-          return await this.attempt(text, voice.id, request);
-        } catch (retryError) {
-          throw this.classify(retryError, request.signal);
-        }
       }
-      throw this.classify(error, request.signal);
+      try {
+        return await this.attempt(text, voice.id, request);
+      } catch (retryError) {
+        throw this.classify(retryError, request.signal);
+      }
     }
+  }
+
+  /**
+   * One immediate second attempt is worthwhile for a rejected token (after correcting the
+   * clock) and for the service's sporadic habit of dropping the connection before any audio
+   * arrives. Everything else (bad request, rate limit) would fail the same way again.
+   */
+  private worthRetrying(error: unknown): boolean {
+    if (error instanceof ProviderError) return false;
+    if (error instanceof HandshakeRejected) return error.status === 403 && error.serverDate !== undefined;
+    return true;
   }
 
   private classify(error: unknown, signal: AbortSignal): ProviderError {

@@ -108,13 +108,18 @@ export async function geminiGenerate(options: GeminiCallOptions): Promise<string
   if (blockReason) throw new ProviderError(providerId, 'bad_response', `request blocked by the model (${blockReason})`);
 
   const candidate = json.candidates?.[0];
+  const reason = candidate?.finishReason;
+  // Anything but a normal stop (MAX_TOKENS, SAFETY, RECITATION, ...) means the answer is
+  // cut off or withheld; a truncated translation must not be spoken.
+  if (reason && reason !== 'STOP') {
+    throw new ProviderError(providerId, 'bad_response', `model stopped early (${reason})`);
+  }
   const text = (candidate?.content?.parts ?? [])
     .filter((part) => part.thought !== true && typeof part.text === 'string')
     .map((part) => part.text)
     .join('');
   if (!text.trim()) {
-    const reason = candidate?.finishReason ?? 'no candidates';
-    throw new ProviderError(providerId, 'bad_response', `model returned no text (${reason})`);
+    throw new ProviderError(providerId, 'bad_response', `model returned no text (${reason ?? 'no candidates'})`);
   }
   return text;
 }
@@ -248,8 +253,9 @@ export class GemmaMtProvider extends GeminiTextMt {
 
   constructor(options: GeminiProviderOptions) {
     super(options);
-    // Gemma models historically accept neither system instructions nor JSON mode.
-    this.negotiator = new GeminiNegotiator(options.models, 'bare');
+    // Current Gemma models are reported to accept system instructions and JSON schemas; older
+    // ones accept neither. Start with the full request and let the negotiator step down.
+    this.negotiator = new GeminiNegotiator(options.models, 'full');
   }
 
   get label(): string {
